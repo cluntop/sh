@@ -24,9 +24,18 @@ if [ "$version" = "$version_new" ]; then
 else
     echo "发现新版本！"
     echo "当前版本 v$version 最新版本 v$version_new"
+fi
+
+echo "1. 现在更新 0. 返回菜单"
+read -e -p "请输入你的选择: " choice
+	case "$choice" in
+  1) 
     curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
     cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
-fi
+    ;;
+  *) clun_tcp ;;
+  esac
+done
 }
 
 break_end() {
