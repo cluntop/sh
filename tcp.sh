@@ -487,16 +487,11 @@ while true; do
     echo "当前版本 v$version"
     echo "命令行输入 tcp 可快速启动脚本"
     echo '---'
-    echo "1. 优化全部"
-    echo "2. 优化限制"
-    echo "3. 优化安全"
-    echo "4. 优化内核"
-    echo "5. 优化TCP"
-    echo "6. 优化UDP"
+    echo "1. 优化全部 2. 优化限制"
+    echo "3. 优化安全 4. 优化内核"
+    echo "5. 优化TCP 6. 优化UDP"
     echo "---"
-    echo "00. 更新脚本"
-    echo "---"
-    echo "0. 退出脚本"
+    echo "00. 更新脚本 0. 退出脚本"
 
     read -e -p "请输入你的选择: " choice
 
