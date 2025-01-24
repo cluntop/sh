@@ -484,7 +484,8 @@ sysctl --system >/dev/null 2>&1
 clun_tcp() {
 while true; do
     clear
-    echo -e "当前版本 v$version"
+    echo "当前版本 v$version"
+    echo "命令行输入 tcp 可快速启动脚本"
     echo '---'
     echo "1. 优化全部"
     echo "2. 优化限制"
