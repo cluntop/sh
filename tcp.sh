@@ -10,6 +10,12 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
+sed -i '/^alias tcp=/d' ~/.bashrc > /dev/null 2>&1
+sed -i '/^alias tcp=/d' ~/.profile > /dev/null 2>&1
+sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
+cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
+cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
+
 update_script() {
 local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/cluntop.github.io/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
 
@@ -19,6 +25,7 @@ else
     echo "发现新版本！"
     echo "当前版本 v$version 最新版本 v$version_new"
     curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/cluntop.github.io/main/tcp.sh && chmod +x clun_tcp.sh
+    cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 fi
 }
 
