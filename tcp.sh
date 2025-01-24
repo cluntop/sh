@@ -17,14 +17,14 @@ cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
 update_script() {
-local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/cluntop.github.io/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
+local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
 
 if [ "$version" = "$version_new" ]; then
     echo "你已经是最新版本！"
 else
     echo "发现新版本！"
     echo "当前版本 v$version 最新版本 v$version_new"
-    curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/cluntop.github.io/main/tcp.sh && chmod +x clun_tcp.sh
+    curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
     cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 fi
 }
@@ -490,7 +490,7 @@ while true; do
     echo "2. 优化限制"
     echo "3. 优化安全"
     echo "4. 优化内核"
-    echo "7. 优化TCP"
+    echo "5. 优化TCP"
     echo "6. 优化UDP"
     echo "---"
     echo "00. 更新脚本"
@@ -505,7 +505,6 @@ while true; do
       3) Install_systemd ;;
       4) Install_sysctl ;;
       5) calculate_tcp ;;
-      7) calculate_tcp ;;
       6) calculate_udp ;;
       00) update_script ;;
       0) clear ; exit ;;
