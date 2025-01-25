@@ -36,7 +36,7 @@ fi
 
 echo "1. 现在更新 0. 返回菜单"
 read -e -p "请输入你的选择: " choice
-	case "$choice" in
+  case "$choice" in
   1) 
     curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
     cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
