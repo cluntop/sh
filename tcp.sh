@@ -16,6 +16,14 @@ sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
 cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
+break_end() {
+    echo "操作完成"
+    echo "按任意键继续..."
+    read -n 1 -s -r -p ""
+    echo ""
+    clear
+}
+
 update_script() {
 local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
 
@@ -40,13 +48,7 @@ read -e -p "请输入你的选择: " choice
 done
 }
 
-break_end() {
-    echo "操作完成"
-    echo "按任意键继续..."
-    read -n 1 -s -r -p ""
-    echo ""
-    clear
-}
+
 
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
