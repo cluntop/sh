@@ -35,6 +35,8 @@ read -e -p "请输入你的选择: " choice
     ;;
   *) clun_tcp ;;
   esac
+    break_end
+  echo
 done
 }
 
