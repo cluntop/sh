@@ -4,6 +4,7 @@
 
 version="1.0.2"
 
+
 if [[ $EUID -ne 0 ]]; then
     clear
     echo "Error: This script must be run as root!"
@@ -482,7 +483,6 @@ else
 fi
 
 sysctl_p
-
 }
 
 clun_tcp() {
