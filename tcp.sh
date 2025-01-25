@@ -30,6 +30,9 @@ udp_low=$(echo "$mem_udp * 10 / 1024" | bc)
 udp_mid=$(echo "$mem_udp * 20 / 512" | bc)
 udp_high=$(echo "$mem_udp* 30 / 256" | bc)
 
+ram_size=$(free -b | awk '/^Mem:/{print $2}')
+conntrack_max=$((ram_size / 16384 / 2))
+
 break_end() {
     echo "操作完成"
     echo "按任意键继续..."
@@ -242,10 +245,10 @@ net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 250000
+net.core.netdev_max_backlog = 25000
 # 181920 listen 函数的backlog参数
 net.ipv4.tcp_max_syn_backlog = 10240
-net.core.somaxconn = 1024000
+net.core.somaxconn = 10240
 # 配置TCP/IP协议栈。它用于控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -261,14 +264,13 @@ net.ipv4.tcp_window_scaling = 1
 net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
 # Add Ref: https://gist.github.com/lixingcong/0e13b4123d29a465e364e230b2e45f60
-net.nf_conntrack_max = 25000000
-net.netfilter.nf_conntrack_max = 25000000
+net.nf_conntrack_max = $conntrack_max
+net.netfilter.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_buckets = 655360
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_established = 36000
-# net.ipv4.netfilter.ip_conntrack_tcp_timeout_established = 7200
 # TIME-WAIT 状态调优
 # Ref: http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html
 # Ref: https://www.cnblogs.com/lulu/p/4149312.html
@@ -396,11 +398,11 @@ vm.dirty_ratio = 15
 vm.overcommit_memory = 1
 # 增加系统文件描述符限制
 # Fix error: too many open files
-fs.file-max = 1024000
+# fs.file-max = 1024000
 fs.inotify.max_user_instances = 524288
 # 设置 inotify 监视的最大用户监视器数量。
 fs.inotify.max_user_watches = 524288
-# fs.nr_open = 1048576
+# fs.nr_open = 1024000
 # 内核响应魔术键
 kernel.sysrq = 1
 # 优化 CPU 设置
