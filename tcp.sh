@@ -482,7 +482,6 @@ else
 fi
 
 sysctl_p
-
 }
 
 clun_tcp() {
