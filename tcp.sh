@@ -17,6 +17,19 @@ sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
 cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
+total_mem_bytes=$(free -b | awk '/^Mem:/ {print $2}')
+total_mem_pages=$((total_mem_bytes / 4096))
+
+tcp_low=$((total_mem_pages / 4))
+tcp_mid=$((total_mem_pages * 2 / 2))
+tcp_high=$((total_mem_pages * 3 / 4))
+
+total_mem_kb=$(free -k | awk '/Mem:/ {print $2}')
+
+udp_low=$(echo "$total_mem_kb * 0.1 / 1" | bc)
+udp_mid=$(echo "$total_mem_kb * 0.5 / 1" | bc)
+udp_high=$(echo "$total_mem_kb * 0.9 / 1" | bc)
+
 break_end() {
     echo "操作完成"
     echo "按任意键继续..."
@@ -96,7 +109,7 @@ sed -i "s/#*net.ipv4.tcp_mem.*/net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high/" 
 }
 
 calculate_udp() {
-sed -i "s/#*net.ipv4.udp_mem =.*/net.ipv4.udp_mem = $udp_low $udp_medium $udp_high/" /etc/sysctl.conf
+sed -i "s/#*net.ipv4.udp_mem =.*/net.ipv4.udp_mem = $udp_low $udp_mid $udp_high/" /etc/sysctl.conf
 }
 
 cleaning_trash() {
@@ -113,20 +126,6 @@ curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && ch
 }
 
 Install_sysctl() {
-
-total_mem_bytes=$(free -b | awk '/^Mem:/ {print $2}')
-
-total_mem_pages=$((total_mem_bytes / 4096))
-
-tcp_low=$((total_mem_pages / 4))
-tcp_mid=$((total_mem_pages * 2 / 2))
-tcp_high=$((total_mem_pages * 3 / 4))
-
-total_mem_kb=$(free -k | awk '/Mem:/ {print $2}')
-
-udp_low=$(echo "$total_mem_kb * 0.1 / 1" | bc)
-udp_medium=$(echo "$total_mem_kb * 0.5 / 1" | bc)
-udp_high=$(echo "$total_mem_kb * 0.9 / 1" | bc)
 
 cat >/etc/sysctl.conf<<EOF
 
