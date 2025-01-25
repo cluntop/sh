@@ -134,7 +134,9 @@ sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
 }
 
-kejilion_sh() { curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh; }
+kejilion_sh() {
+curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+}
 
 Install_sysctl() {
 
