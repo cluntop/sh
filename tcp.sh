@@ -134,6 +134,8 @@ sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
 }
 
+kejilion_sh() { curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh }
+
 Install_sysctl() {
 
 cat >/etc/sysctl.conf<<EOF
@@ -504,7 +506,7 @@ while true; do
     echo "3. 优化安全 4. 优化内核"
     echo "5. 优化TCP 6. 优化UDP"
     echo "---"
-    echo "7. 清理垃圾"
+    echo "7. 清理垃圾 8. 安装 科技lion"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
 
@@ -518,6 +520,7 @@ while true; do
       5) calculate_tcp ;;
       6) calculate_udp ;;
       7) cleaning_trash ;;
+      8) kejilion_sh ;;
       00) update_script ;;
       0) clear ; exit ;;
       *) echo "无效的输入!" ;;
