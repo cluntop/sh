@@ -26,9 +26,9 @@ tcp_high=$((total_pages * 30 / 100))
 
 mem_udp=$(free -k | awk '/Mem:/ {print $2}')
 
-udp_low=$(echo "$mem_udp * 30 / 1024" | bc)
+udp_low=$(echo "$mem_udp * 10 / 1024" | bc)
 udp_mid=$(echo "$mem_udp * 20 / 512" | bc)
-udp_high=$(echo "$mem_udp* 10 / 256" | bc)
+udp_high=$(echo "$mem_udp* 30 / 256" | bc)
 
 break_end() {
     echo "操作完成"
@@ -504,8 +504,8 @@ while true; do
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl ;;
-      5) calculate_tcp ; sysctl_p ;;
-      6) calculate_udp ; sysctl_p ;;
+      5) calculate_tcp ; sysctl_p ; clun_tcp ;;
+      6) calculate_udp ; sysctl_p ; clun_tcp ;;
       7) cleaning_trash ;;
       8) kejilion_sh ;;
       00) update_script ;;
@@ -517,4 +517,5 @@ while true; do
 done
 }
 
-sleep 1 && clun_tcp
+# sleep 1 && 
+clun_tcp
