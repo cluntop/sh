@@ -1,6 +1,10 @@
 ### clun_tcp.sh
 
 ```bash
+bash <(curl -sL clun.top)
+```
+
+```bash
 
 bash <(curl -L -s cluntop.github.io/tcp.sh)
 
