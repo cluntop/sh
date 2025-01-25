@@ -17,18 +17,18 @@ sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
 cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
-total_mem_bytes=$(free -b | awk '/^Mem:/ {print $2}')
-total_mem_pages=$((total_mem_bytes / 4096))
+mem_tcp=$(free -b | awk '/^Mem:/ {print $2}')
+total_pages=$((mem_tcp / 4096))
 
-tcp_low=$((total_mem_pages / 4))
-tcp_mid=$((total_mem_pages * 2 / 2))
-tcp_high=$((total_mem_pages * 3 / 4))
+tcp_low=$((total_pages * 10 / 100))
+tcp_mid=$((total_pages * 20 / 100))
+tcp_high=$((total_pages * 30 / 100))
 
-total_mem_kb=$(free -k | awk '/Mem:/ {print $2}')
+mem_udp=$(free -k | awk '/Mem:/ {print $2}')
 
-udp_low=$(echo "$total_mem_kb * 0.1 / 1" | bc)
-udp_mid=$(echo "$total_mem_kb * 0.5 / 1" | bc)
-udp_high=$(echo "$total_mem_kb * 0.9 / 1" | bc)
+udp_low=$(echo "$mem_udp * 0.1 / 1024" | bc)
+udp_mid=$(echo "$mem_udp * 0.5 / 512" | bc)
+udp_high=$(echo "$mem_udp * 0.9 / 256" | bc)
 
 break_end() {
     echo "操作完成"
@@ -47,17 +47,19 @@ else
     echo "发现新版本！"
     echo "当前版本 v$version 最新版本 v$version_new"
 fi
-
-echo "1. 现在更新 0. 返回菜单"
-read -e -p "请输入你的选择: " choice
-  case "$choice" in
-  1) 
-    curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
-    cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
-    ;;
-  *) clun_tcp ;;
-esac
-  break_end
+    echo "1. 现在更新 0. 返回菜单"
+    read -e -p "请输入你的选择: " choice
+      case "$choice" in
+      1)
+        curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
+        cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
+        ;;
+      2)
+        bash <(curl -sL clun.top)
+	    ;;
+      *) clun_tcp ;;
+    esac
+      break_end
 }
 
 Install_limits() {
@@ -477,13 +479,9 @@ else
     echo "$file_sysctl 文件存在，不执行 ln"
 fi
 
-# sysctl_p
-sysctl -p >/dev/null 2>&1
-sysctl --system >/dev/null 2>&1
+sysctl_p
+
 }
-
-
-# sleep 3 && reboot >/dev/null 2>&1
 
 clun_tcp() {
 while true; do
@@ -506,8 +504,8 @@ while true; do
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl ;;
-      5) calculate_tcp ;;
-      6) calculate_udp ;;
+      5) calculate_tcp ; sysctl_p ;;
+      6) calculate_udp ; sysctl_p ;;
       7) cleaning_trash ;;
       8) kejilion_sh ;;
       00) update_script ;;
