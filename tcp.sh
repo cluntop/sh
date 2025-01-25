@@ -237,8 +237,8 @@ net.core.wmem_max = 33554432
 # 有条件建议依据实测结果调整 tcp_rmem, tcp_wmem 相关数值
 # 个人实测差别不大, 可能是我网本来就比较好
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 8192 87380 536870912
-net.ipv4.tcp_wmem = 4096 16384 536870912
+net.ipv4.tcp_rmem = 65534 37500000 536870912
+net.ipv4.tcp_wmem = 65534 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 6291456
 # net.ipv4.tcp_notsent_lowat = 131072
@@ -293,9 +293,9 @@ net.ipv4.tcp_sack = 1
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 它主要用于控制TCP连接在发生超时后的快速恢复策略。
-net.ipv4.tcp_frto = 0
+net.ipv4.tcp_frto = 2
 # 是一种用于在IP网络中传递拥塞信息的机制。
-net.ipv4.tcp_ecn = 0
+net.ipv4.tcp_ecn = 2
 # TCP SYN 连接超时重传次数
 net.ipv4.tcp_syn_retries = 2
 net.ipv4.tcp_synack_retries = 2
@@ -303,11 +303,6 @@ net.ipv4.tcp_synack_retries = 2
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
 net.ipv4.tcp_retries2 = 5
 # 开启 SYN 洪水攻击保护
-# 注意: tcp_syncookies 启用时, 此时实际上没有逻辑上的队列长度,
-# Backlog 设置将被忽略. syncookie 是一个出于对现实的妥协,
-# 严重违反 TCP 协议的设计, 会造成 TCP option 不可用, 且实现上
-# 通过计算 hash 避免维护半开连接也是一种 tradeoff 而非万金油,
-# 勿听信所谓“安全优化教程”而无脑开启
 net.ipv4.tcp_syncookies = 0
 
 # Ref: https://linuxgeeks.github.io/2017/03/20/212135-Linux%E5%86%85%E6%A0%B8%E5%8F%82%E6%95%B0rp_filter/
@@ -316,8 +311,8 @@ net.ipv4.tcp_syncookies = 0
 net.ipv4.conf.default.rp_filter = 0
 net.ipv4.conf.all.rp_filter = 0
 
-# 减少处于 FIN-WAIT-2 连接状态的时间使系统可以处理更多的连接
-# Ref: https://www.cnblogs.com/kaishirenshi/p/11544874.html
+# 减少处于 FIN-WAIT-2
+# 连接状态的时间使系统可以处理更多的连接
 net.ipv4.tcp_fin_timeout = 30
 
 # Ref: https://xwl-note.readthedocs.io/en/latest/linux/tuning.html
@@ -360,7 +355,7 @@ net.ipv4.tcp_retries1 = 3
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
 # 系统中最多有多少个 TCP 套接字不被关联到任何一个用户文件句柄上
-net.ipv4.tcp_max_orphans = 65536
+net.ipv4.tcp_max_orphans = 65535
 # arp_table的缓存限制优化
 # net.ipv4.neigh.default.gc_thresh1 = 128
 # net.ipv4.neigh.default.gc_thresh2 = 512
@@ -379,7 +374,7 @@ net.ipv4.conf.all.arp_announce = 2
 
 # Ref: Aliyun, etc
 # 内核 Panic 后 1 秒自动重启
-kernel.panic = 0
+#kernel.panic = 0
 # 允许更多的PIDs, 减少滚动翻转问题
 # kernel.pid_max = 32768
 # 内核所允许的最大共享内存段的大小（bytes）
@@ -389,11 +384,11 @@ kernel.panic = 0
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
 # 当发生oom时, 自动转换为panic
-vm.panic_on_oom = 0
+#vm.panic_on_oom = 0
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
 vm.dirty_background_ratio = 5
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
-vm.min_free_kbytes = 65536
+vm.min_free_kbytes = 65535
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 50
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
@@ -458,7 +453,7 @@ net.ipv6.conf.all.accept_ra = 1
 net.ipv6.conf.eth0.accept_ra = 1
 
 # 1 = IPv4 优先 / 0 = 6 优先
-net.ipv6.conf.all.disable_ipv6 = 1
+# net.ipv6.conf.all.disable_ipv6 = 1
 
 # 控制未解析（unresolved）的邻居（neighbor）项队列长度。
 net.ipv4.neigh.default.unres_qlen = 1000
