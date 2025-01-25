@@ -223,8 +223,11 @@ net.ipv4.tcp_invalid_ratelimit = 10000
 # Ref: https://blog.cloudflare.com/optimizing-tcp-for-high-throughput-and-low-latency/
 # Ref: https://zhuanlan.zhihu.com/p/149372947
 # https://github.com/torvalds/linux/blob/87d6aab2389e5ce0197d8257d5f8ee965a67c4cd/net/ipv4/tcp_output.c#L241-L248
-net.ipv4.tcp_mem = 65536 131072 12582912
-net.ipv4.udp_mem = 65536 131072 12582912
+#net.ipv4. tcp_mem = 65536 131072 12582912
+#net.ipv4. udp_mem = 65536 131072 12582912
+
+net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
+net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
 net.core.rmem_default = 536870912
