@@ -489,8 +489,9 @@ clun_tcp() {
 while true; do
     clear
     echo "当前版本 v$version"
+    echo "更新提交问题 t.me/clungit"
     echo "命令行输入 tcp 可快速启动脚本"
-    echo '---'
+    echo "---"
     echo "1. 优化全部 2. 优化限制"
     echo "3. 优化安全 4. 优化内核"
     echo "5. 优化TCP 6. 优化UDP"
