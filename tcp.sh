@@ -26,9 +26,9 @@ tcp_high=$((total_pages * 30 / 100))
 
 mem_udp=$(free -k | awk '/Mem:/ {print $2}')
 
-udp_low=$(echo "$mem_udp / 1024" | bc)
-udp_mid=$(echo "$mem_udp / 512" | bc)
-udp_high=$(echo "$mem_udp / 256" | bc)
+udp_low=$(echo "$mem_udp * 30 / 1024" | bc)
+udp_mid=$(echo "$mem_udp * 20 / 512" | bc)
+udp_high=$(echo "$mem_udp* 10 / 256" | bc)
 
 break_end() {
     echo "操作完成"
