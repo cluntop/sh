@@ -6,7 +6,7 @@ bash <(curl -sL clun.top)
 
 ```bash
 
-bash <(curl -L -s cluntop.github.io/tcp.sh)
+bash <(curl -sL cluntop.github.io/tcp.sh)
 
 ```
 
