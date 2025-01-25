@@ -1,5 +1,6 @@
 #!/bin/bash
 # Issues https://clun.top
+# bash <(curl -sL clun.top)
 
 version="1.0.2"
 
@@ -46,8 +47,6 @@ esac
   break_end
 }
 
-
-
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
 * soft     nproc          1000000
@@ -93,36 +92,11 @@ fi
 }
 
 calculate_tcp() {
-
-# 获取系统内存总量，单位为字节
-total_mem_bytes=$(free -b | awk '/^Mem:/ {print $2}')
-
-# 将字节转换为页数，每页通常为4096字节
-total_mem_pages=$((total_mem_bytes / 4096))
-
-# 计算低、中、高水位标记 按照1:2:3的比例
-tcp_low=$((total_mem_pages / 4))
-tcp_mid=$((total_mem_pages * 2 / 2))
-tcp_high=$((total_mem_pages * 3 / 4))
-
-# 修改net.ipv4.tcp_mem配置
 sed -i "s/#*net.ipv4.tcp_mem.*/net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high/" /etc/sysctl.conf
-
 }
 
 calculate_udp() {
-
-# 获取系统内存总量（单位：KB）
-total_mem_kb=$(free -k | awk '/Mem:/ {print $2}')
-
-# 计算udp_mem的三个值，这里只是示例比例，你可以根据实际需求调整
-udp_low=$(echo "$total_mem_kb * 0.1 / 1" | bc)
-udp_medium=$(echo "$total_mem_kb * 0.5 / 1" | bc)
-udp_high=$(echo "$total_mem_kb * 0.9 / 1" | bc)
-
-# 修改net.ipv4.udp_mem参数
 sed -i "s/#*net.ipv4.udp_mem =.*/net.ipv4.udp_mem = $udp_low $udp_medium $udp_high/" /etc/sysctl.conf
-
 }
 
 cleaning_trash() {
@@ -139,6 +113,20 @@ curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && ch
 }
 
 Install_sysctl() {
+
+total_mem_bytes=$(free -b | awk '/^Mem:/ {print $2}')
+
+total_mem_pages=$((total_mem_bytes / 4096))
+
+tcp_low=$((total_mem_pages / 4))
+tcp_mid=$((total_mem_pages * 2 / 2))
+tcp_high=$((total_mem_pages * 3 / 4))
+
+total_mem_kb=$(free -k | awk '/Mem:/ {print $2}')
+
+udp_low=$(echo "$total_mem_kb * 0.1 / 1" | bc)
+udp_medium=$(echo "$total_mem_kb * 0.5 / 1" | bc)
+udp_high=$(echo "$total_mem_kb * 0.9 / 1" | bc)
 
 cat >/etc/sysctl.conf<<EOF
 
