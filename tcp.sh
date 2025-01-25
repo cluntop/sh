@@ -42,10 +42,8 @@ read -e -p "请输入你的选择: " choice
     cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
     ;;
   *) clun_tcp ;;
-  esac
-    # break_end
-  # echo
-# done
+esac
+  break_end
 }
 
 
