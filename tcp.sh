@@ -30,8 +30,8 @@ udp_low=$(echo "$mem_udp * 10 / 1024" | bc)
 udp_mid=$(echo "$mem_udp * 20 / 512" | bc)
 udp_high=$(echo "$mem_udp* 30 / 256" | bc)
 
-ram_size=$(grep MemTotal /proc/meminfo | awk '{print $2 * 1024}')
-conntrack_max=$(echo "$ram_size / 16384 / 2" | bc)
+ram_size=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+conntrack_max=$(echo "$ram_size * 1024 / 16384 / 2" | bc)
 
 break_end() {
     echo "操作完成"
