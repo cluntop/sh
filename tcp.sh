@@ -245,11 +245,11 @@ net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 25000
-# 181920 listen 函数的backlog参数
-net.ipv4.tcp_max_syn_backlog = 10240
+net.core.netdev_max_backlog = 102400
+# 181920 listen 函数的 backlog 参数
+net.ipv4.tcp_max_syn_backlog = 30720
 net.core.somaxconn = 10240
-# 配置TCP/IP协议栈。它用于控制在TCP接收缓冲区溢出时的行为。
+# 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 50000
@@ -293,7 +293,7 @@ net.ipv4.tcp_sack = 1
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 它主要用于控制TCP连接在发生超时后的快速恢复策略。
-net.ipv4.tcp_frto = 0
+net.ipv4.tcp_frto = 2
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 2
 # TCP SYN 连接超时重传次数
@@ -419,7 +419,7 @@ vm.zone_reclaim_mode = 2
 # Ref: Unknwon
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
 # 在无线环境下特别有益处, 因为在这种环境下分组丢失典型地是因为随机无线电干扰而不是中间路由器阻塞
-net.ipv4.tcp_frto = 1
+# net.ipv4.tcp_frto = 1
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
 # TCP 流中重排序的数据报最大数量
