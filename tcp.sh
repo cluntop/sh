@@ -4,7 +4,6 @@
 
 version="1.0.2"
 
-
 if [[ $EUID -ne 0 ]]; then
     clear
     echo "Error: This script must be run as root!"
@@ -60,7 +59,7 @@ fi
         ;;
       2)
         bash <(curl -sL clun.top)
-	    ;;
+	       ;;
       *) clun_tcp ;;
     esac
       break_end
@@ -94,11 +93,11 @@ else
     echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive
 fi
 
-if grep -q 'DefaultLimitNOFILE=655360' /etc/systemd/system.conf; then
+if grep -q 'DefaultLimitNOFILE=65536' /etc/systemd/system.conf; then
     echo "DefaultLimitNOFILE Existence ok."
 else
     sed -i '/^DefaultLimitNOFILE=/d' /etc/systemd/system.conf
-    echo "DefaultLimitNOFILE=655360" >> /etc/systemd/system.conf
+    echo "DefaultLimitNOFILE=65536" >> /etc/systemd/system.conf
 fi
 
 if grep -q 'pam_limits.so' /etc/pam.d/common-session; then
@@ -129,6 +128,10 @@ sysctl --system >/dev/null 2>&1
 
 kejilion_sh() {
 curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+}
+
+Install_All() {
+Install_limits; Install_systemd; Install_sysctl; calculate_tcp; calculate_udp;
 }
 
 Install_sysctl() {
@@ -246,11 +249,11 @@ net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 25000
-# 181920 listen 函数的backlog参数
-net.ipv4.tcp_max_syn_backlog = 10240
+net.core.netdev_max_backlog = 102400
+# 181920 listen 函数的 backlog 参数
+net.ipv4.tcp_max_syn_backlog = 30720
 net.core.somaxconn = 10240
-# 配置TCP/IP协议栈。它用于控制在TCP接收缓冲区溢出时的行为。
+# 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 50000
@@ -314,7 +317,7 @@ net.ipv4.conf.all.rp_filter = 0
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_fin_timeout = 15
 
 # Ref: https://xwl-note.readthedocs.io/en/latest/linux/tuning.html
 # 默认情况下一个 TCP 连接关闭后, 把这个连接曾经有的参数保存到dst_entry中
@@ -420,7 +423,7 @@ vm.zone_reclaim_mode = 2
 # Ref: Unknwon
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
 # 在无线环境下特别有益处, 因为在这种环境下分组丢失典型地是因为随机无线电干扰而不是中间路由器阻塞
-net.ipv4.tcp_frto = 1
+# net.ipv4.tcp_frto = 1
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
 # TCP 流中重排序的数据报最大数量
@@ -503,7 +506,7 @@ while true; do
     read -e -p "请输入你的选择: " choice
 
     case $choice in
-      1) Install_limits ; Install_systemd ; Install_sysctl ; calculate_tcp ; calculate_udp ;;
+      1) Install_All ;;
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl ;;
