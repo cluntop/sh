@@ -59,7 +59,7 @@ fi
         ;;
       2)
         bash <(curl -sL clun.top)
-	    ;;
+	       ;;
       *) clun_tcp ;;
     esac
       break_end
@@ -128,6 +128,10 @@ sysctl --system >/dev/null 2>&1
 
 kejilion_sh() {
 curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+}
+
+Install_All() {
+Install_limits; Install_systemd; Install_sysctl; calculate_tcp; calculate_udp;
 }
 
 Install_sysctl() {
@@ -502,7 +506,7 @@ while true; do
     read -e -p "请输入你的选择: " choice
 
     case $choice in
-      1) Install_limits ; Install_systemd ; Install_sysctl ; calculate_tcp ; calculate_udp ;;
+      1) Install_All ;;
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl ;;
