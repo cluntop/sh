@@ -17,21 +17,18 @@ sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
 cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
-mem_tcp=$(free -b | awk '/^Mem:/ {print $2}')
-total_pages=$((mem_tcp / 4096))
+# 获取系统内存大小（以 MB 为单位）
+size_mb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 
-tcp_low=$((total_pages * 10 / 100))
-tcp_mid=$((total_pages * 20 / 100))
-tcp_high=$((total_pages * 30 / 100))
+tcp_low=$(echo "$size_mb * 4096 / 8" | bc)
+tcp_mid=$(echo "$size_mb * 4096 / 4" | bc)
+tcp_high=$(echo "$size_mb * 4096 / 2" | bc)
 
-mem_udp=$(free -k | awk '/Mem:/ {print $2}')
+udp_low=$(echo "$size_mb * 2048 / 8" | bc)
+udp_mid=$(echo "$size_mb * 2048 / 4" | bc)
+udp_high=$(echo "$size_mb * 2048 / 2" | bc)
 
-udp_low=$(echo "$mem_udp * 10 / 1024" | bc)
-udp_mid=$(echo "$mem_udp * 20 / 512" | bc)
-udp_high=$(echo "$mem_udp* 30 / 256" | bc)
-
-ram_size=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-conntrack_max=$(echo "$ram_size * 1024 / 16384 / 2" | bc)
+conntrack_max=$(echo "$size_mb * 1024 / 16384 / 2" | bc)
 
 break_end() {
     echo "操作完成"
