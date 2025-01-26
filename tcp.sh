@@ -4,7 +4,6 @@
 
 version="1.0.2"
 
-
 if [[ $EUID -ne 0 ]]; then
     clear
     echo "Error: This script must be run as root!"
@@ -94,11 +93,11 @@ else
     echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive
 fi
 
-if grep -q 'DefaultLimitNOFILE=655360' /etc/systemd/system.conf; then
+if grep -q 'DefaultLimitNOFILE=65536' /etc/systemd/system.conf; then
     echo "DefaultLimitNOFILE Existence ok."
 else
     sed -i '/^DefaultLimitNOFILE=/d' /etc/systemd/system.conf
-    echo "DefaultLimitNOFILE=655360" >> /etc/systemd/system.conf
+    echo "DefaultLimitNOFILE=65536" >> /etc/systemd/system.conf
 fi
 
 if grep -q 'pam_limits.so' /etc/pam.d/common-session; then
