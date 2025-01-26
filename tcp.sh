@@ -294,7 +294,7 @@ net.ipv4.tcp_sack = 1
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 它主要用于控制TCP连接在发生超时后的快速恢复策略。
-net.ipv4.tcp_frto = 2
+net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 2
 # TCP SYN 连接超时重传次数
@@ -314,7 +314,7 @@ net.ipv4.conf.all.rp_filter = 0
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_fin_timeout = 15
 
 # Ref: https://xwl-note.readthedocs.io/en/latest/linux/tuning.html
 # 默认情况下一个 TCP 连接关闭后, 把这个连接曾经有的参数保存到dst_entry中
