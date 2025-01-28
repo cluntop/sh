@@ -395,7 +395,7 @@ vm.min_free_kbytes = 65535
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
 vm.swappiness = 10
 # 仅用10%做为系统cache
-vm.dirty_ratio = 15
+vm.dirty_ratio = 10
 vm.overcommit_memory = 1
 # 增加系统文件描述符限制
 # Fix error: too many open files
