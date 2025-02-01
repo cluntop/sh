@@ -525,13 +525,19 @@ done
 if [ -z "$1" ]; then
   echo "请提供 tcp 参数"
   exit 1
-fi
+ else
+  
+
+# 检查是否传递了参数
+
 
 # 将传递的参数赋值给变量 tcp
 tcp=$1
 
 # 使用变量 tcp
 echo "你传递的 tcp 参数是: $tcp"
+
+fi
 
 
 if [ "$#" -eq 0 ]; then
