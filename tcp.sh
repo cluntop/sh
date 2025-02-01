@@ -515,7 +515,7 @@ while true; do
       0) clear ; exit ;;
       *) echo "无效的输入!" ;;
     esac
-        break_end
+      break_end
     echo
 done
 }
@@ -536,7 +536,7 @@ case $1 in
       fi
       ;;
     "sysctl") Install_sysctl ;;
-    *) echo "?" ;;
+    *) sleep 1 && clun_tcp ;;
 esac
 
 # sleep 1 && 
