@@ -62,7 +62,7 @@ fi
         ;;
       2)
         bash <(curl -sL clun.top)
-	       ;;
+           ;;
       *) clun_tcp ;;
     esac
       break_end
@@ -522,18 +522,19 @@ done
 
 case $1 in
     "tcp")
-	  # 设置定时任务字符串
-	  cron_clun="0 * * * * /bin/bash -c '’bash <(curl -sL clun.top) tcp'"
-	  # 检查是否存在相同的定时任务
-	  clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
-	  # 如果不存在，则添加定时任务
-	  if [ -z "$clun_cron" ]; then
-	    (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
-		echo "优化内核任务已添加"
-	  else
-	    echo "优化内核已存在，无需添加"
-	  fi
-	  ;;
+      # 设置定时任务字符串
+      cron_clun="0 * * * * curl -sL clun.top | bash -s -- tcp"
+      # 检查是否存在相同的定时任务
+      clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
+      # 如果不存在，则添加定时任务
+      if [ -z "$clun_cron" ]; then
+        (crontab -l 2>/dev/null; grep -Fq "$cron_clun") | crontab -
+        echo "优化内核任务已添加"
+      else
+	    crontab -l 2>/dev/null | grep -Fv "$cron_clun" | crontab -
+        echo "优化内核任务已删除"
+      fi
+      ;;
     *) clun_tcp ;;
 esac
 
