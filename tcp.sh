@@ -527,6 +527,7 @@ else
 	case $1 in
   tcp)
    Install_sysctl
+   break_end
    ;;
 		*)
 			clun_top
