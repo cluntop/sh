@@ -299,7 +299,7 @@ net.ipv4.tcp_sack = 1
 # 启用转发应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
-# 它主要用于控制TCP连接在发生超时后的快速恢复策略。
+# 开启F-RTO(针对TCP重传超时的增强的恢复算法).
 net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
@@ -418,14 +418,11 @@ net.ipv4.tcp_low_latency = 0
 # 当某个节点可用内存不足时, 系统会倾向于从其他节点分配内存. 对 Mongo/Redis 类 cache 服务器友好
 vm.zone_reclaim_mode = 2
 
-# 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-# 在无线环境下特别有益处, 因为在这种环境下分组丢失典型地是因为随机无线电干扰而不是中间路由器阻塞
-# net.ipv4.tcp_frto = 1
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
 # TCP 流中重排序的数据报最大数量
-net.ipv4.tcp_reordering = 300
-# 开启后, 在重传时会试图发送满大小的包. 这是对一些有 BUG 的打印机的绕过方式
+net.ipv4.tcp_reordering = 5
+# 控制 TCP 协议在重传数据时的行为。
 net.ipv4.tcp_retrans_collapse = 0
 # 自动阻塞判断
 net.ipv4.tcp_autocorking = 0
@@ -433,7 +430,7 @@ net.ipv4.tcp_autocorking = 0
 net.ipv4.tcp_moderate_rcvbuf = 1
 # 单个TSO段可消耗拥塞窗口的比例, 默认值为 3
 net.ipv4.tcp_tso_win_divisor = 3
-# 对于在 RFC1337 中描述的 TIME-WAIT Assassination Hazards in TCP 问题的修复
+# 控制 TCP 协议在处理 TIME-WAIT 状态时的行为
 net.ipv4.tcp_rfc1337 = 0
 # 包转发. 出于安全考虑, Linux 系统默认禁止数据包转发
 net.ipv4.ip_forward = 1
@@ -461,7 +458,7 @@ net.ipv4.neigh.default.unres_qlen = 1000
 net.ipv4.neigh.default.unres_qlen_bytes = 16777216
 
 #ARP缓存的过期时间（单位毫秒）
-net.ipv4.neigh.default.base_reachable_time_ms = 600000
+net.ipv4.neigh.default.base_reachable_time_ms = 60000
 
 #在把记录标记为不可达之前，用多播/广播方式解析地址的最大次数
 net.ipv4.neigh.default.mcast_solicit = 20
