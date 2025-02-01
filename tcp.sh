@@ -482,6 +482,14 @@ fi
 sysctl_p
 }
 
+tcp_info() {
+echo "---"
+echo "以下是命令参考用例："
+echo "启动脚本            tcp"
+echo "优化内核          tcp sysctl"
+echo "优化内核任务          tcp tcp"
+}
+
 clun_tcp() {
 while true; do
     clear
@@ -493,7 +501,7 @@ while true; do
     echo "3. 优化安全 4. 优化内核"
     echo "5. 优化TCP 6. 优化UDP"
     echo "---"
-    echo "7. 清理垃圾 8. 安装 科技lion"
+    echo "7. 清理垃圾 8. 命令参考"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
 
@@ -507,7 +515,7 @@ while true; do
       5) calculate_tcp ; sysctl_p ; clun_tcp ;;
       6) calculate_udp ; sysctl_p ; clun_tcp ;;
       7) cleaning_trash ;;
-      8) kejilion_sh ;;
+      8) tcp_info ;;
       00) update_script ;;
       0) clear ; exit ;;
       *) echo "无效的输入!" ;;
