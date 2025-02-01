@@ -528,7 +528,7 @@ case $1 in
       clun_cron=$(crontab -l 2>/dev/null | grep -Fq "$cron_clun")
       # 如果不存在，则添加定时任务
       if [ -z "$clun_cron" ]; then
-        (crontab -l 2>/dev/null | grep -Fq "$cron_clun") | crontab -
+        (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
         echo "优化内核任务已添加"
       else
 	    crontab -l 2>/dev/null | grep -Fv "$cron_clun" | crontab -
