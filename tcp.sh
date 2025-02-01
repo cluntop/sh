@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.0.2"
-# 定义颜色变量（可选，美化菜单）
+
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
@@ -526,29 +526,20 @@ while true; do
 done
 }
 
-
-
-
-
-
-
-
-
-
-
-# 根据参数执行逻辑
 case $1 in
-    "tcp") Install_sysctl ;;
-    *) clun_tcp ;;  # 无参数时进入主菜单
+    "tcp")
+	  # 设置定时任务字符串
+	  cron_clun="0 * * * * /bin/bash -c "bash <(curl -sL clun.top) tcp""
+	  # 检查是否存在相同的定时任务
+	  clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
+	  # 如果不存在，则添加定时任务
+	  if [ -z "$clun_cron" ]; then
+	    (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
+		echo "优化内核任务已添加"
+	  fi
+	  ;;
+    *) clun_tcp ;;
 esac
-
-
-
-
-
-
-
-
 
 # sleep 1 && 
 # clun_tcp
