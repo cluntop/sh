@@ -521,37 +521,31 @@ done
 }
 
 
+
+
+
+
+
 # 检查是否传递了参数
 if [ -z "$1" ]; then
-  echo "请提供 tcp 参数"
+  clun_top
   exit 1
  else
   case $1 in
   tcp)
-   Install_sysctl
-   break_end
-   ;;
+    Install_sysctl
+    break_end
+    ;;
   *)
-   clun_top
-   ;;
+    clun_top
+    ;;
   esac
 fi
 
 
-if [ "$#" -eq 0 ]; then
- # 如果没有参数，运行交互式逻辑
- echo "1"
-else
- case $1 in
-  tcp)
-   Install_sysctl
-   break_end
-   ;;
-  *)
-   clun_top
-   ;;
-  esac
-fi
+
+
+
 
 # sleep 1 && 
 clun_tcp
