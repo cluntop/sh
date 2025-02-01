@@ -536,7 +536,7 @@ case $1 in
       fi
       ;;
     "sysctl") Install_sysctl ;;
-    *) clun_tcp ;;
+    *) echo "?" ;;
 esac
 
 # sleep 1 && 
