@@ -485,9 +485,9 @@ sysctl_p
 tcp_info() {
 echo "---"
 echo "以下是命令参考用例："
-echo "启动脚本            tcp"
-echo "优化内核          tcp sysctl"
-echo "优化内核任务          tcp tcp"
+echo "启动脚本 tcp"
+echo "优化内核 tcp sysctl"
+echo "优化内核任务 tcp tcp"
 }
 
 clun_tcp() {
