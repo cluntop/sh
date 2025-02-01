@@ -302,7 +302,7 @@ net.ipv4.tcp_fack = 1
 # 它主要用于控制TCP连接在发生超时后的快速恢复策略。
 net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
-net.ipv4.tcp_ecn = 2
+net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
 net.ipv4.tcp_syn_retries = 2
 net.ipv4.tcp_synack_retries = 2
