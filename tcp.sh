@@ -529,7 +529,7 @@ done
 case $1 in
     "tcp")
 	  # 设置定时任务字符串
-	  cron_clun="0 * * * * /bin/bash -c "bash <(curl -sL clun.top) tcp""
+	  cron_clun="0 * * * * /bin/bash -c bash <(curl -sL clun.top) tcp"
 	  # 检查是否存在相同的定时任务
 	  clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
 	  # 如果不存在，则添加定时任务
