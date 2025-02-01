@@ -536,68 +536,10 @@ done
 
 
 
-
-# 主菜单函数
-main_menu() {
-    clear
-    echo -e "${GREEN}>>> 主菜单 ${RESET}"
-    echo "1. TCP 功能"
-    echo "2. 其他功能"
-    echo "3. 退出"
-    read -p "请输入选项: " choice
-
-    case $choice in
-        1) tcp_menu ;;
-        2) another_menu ;;
-        3) exit 0 ;;
-        *) echo -e "${RED}无效选项，请重试！${RESET}" && sleep 1 && main_menu ;;
-    esac
-}
-
-# TCP 菜单函数
-tcp_menu() {
-    clear
-    echo -e "${BLUE}>>> TCP 功能 ${RESET}"
-    echo "1. 查看 TCP 连接"
-    echo "2. 测试端口连通性"
-    echo "3. 返回主菜单"
-    read -p "请输入选项: " choice
-
-    case $choice in
-        1) echo -e "${YELLOW}当前 TCP 连接：${RESET}" && netstat -ant && pause ;;
-        2) read -p "输入测试 IP:端口 (如 8.8.8.8:53): " addr && nc -zv ${addr/:/ } ;;
-        3) main_menu ;;
-        *) echo -e "${RED}无效选项！${RESET}" && sleep 1 && tcp_menu ;;
-    esac
-}
-
-# 其他菜单函数
-another_menu() {
-    clear
-    echo -e "${BLUE}>>> 其他功能 ${RESET}"
-    echo "1. 功能 A"
-    echo "2. 功能 B"
-    echo "3. 返回主菜单"
-    read -p "请输入选项: " choice
-
-    case $choice in
-        1) echo "执行功能 A..." && sleep 2 && another_menu ;;
-        2) echo "执行功能 B..." && sleep 2 && another_menu ;;
-        3) main_menu ;;
-        *) echo -e "${RED}无效选项！${RESET}" && sleep 1 && another_menu ;;
-    esac
-}
-
-# 暂停函数
-pause() {
-    read -n1 -s -p "按任意键继续..."
-}
-
 # 根据参数执行逻辑
 case $1 in
-    "tcp") tcp_menu ;;
-    "another") another_menu ;;
-    *) main_menu ;;  # 无参数时进入主菜单
+    "tcp") Install_sysctl ;;
+    *) clun_top ;;  # 无参数时进入主菜单
 esac
 
 
