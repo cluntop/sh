@@ -520,6 +520,20 @@ while true; do
 done
 }
 
+
+# 检查是否传递了参数
+if [ -z "$1" ]; then
+  echo "请提供 tcp 参数"
+  exit 1
+fi
+
+# 将传递的参数赋值给变量 tcp
+tcp=$1
+
+# 使用变量 tcp
+echo "你传递的 tcp 参数是: $tcp"
+
+
 if [ "$#" -eq 0 ]; then
  # 如果没有参数，运行交互式逻辑
  echo "1"
