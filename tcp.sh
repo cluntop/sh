@@ -526,20 +526,60 @@ done
 
 
 
-# 检查是否传递了参数
-if [ -z "$1" ]; then
-  clun_top
-  exit 1
- else
-  case $1 in
-  tcp)
-    Install_sysctl
-    break_end
-    ;;
-  *)
-    clun_top
-    ;;
-  esac
+
+
+# 定义主菜单
+main_menu() {
+    echo "欢迎使用菜单脚本"
+    echo "1. 显示 TCP 菜单"
+    echo "2. 显示另一个菜单"
+    echo "3. 退出"
+    read -p "请输入选项: " choice
+    case $choice in
+        1) tcp_menu ;;
+        2) another_menu ;;
+        3) exit 0 ;;
+        *) echo "无效选项，请重试" && main_menu ;;
+    esac
+}
+
+# 定义 TCP 菜单
+tcp_menu() {
+    echo "这是 TCP 菜单"
+    echo "1. 查看 TCP 连接"
+    echo "2. 测试 TCP 端口"
+    echo "3. 返回主菜单"
+    read -p "请输入选项: " choice
+    case $choice in
+        1) echo "显示 TCP 连接..." && sleep 2 && tcp_menu ;;
+        2) echo "测试 TCP 端口..." && sleep 2 && tcp_menu ;;
+        3) main_menu ;;
+        *) echo "无效选项，请重试" && tcp_menu ;;
+    esac
+}
+
+# 定义另一个菜单
+another_menu() {
+    echo "这是另一个菜单"
+    echo "1. 选项 A"
+    echo "2. 选项 B"
+    echo "3. 返回主菜单"
+    read -p "请输入选项: " choice
+    case $choice in
+        1) echo "执行选项 A..." && sleep 2 && another_menu ;;
+        2) echo "执行选项 B..." && sleep 2 && another_menu ;;
+        3) main_menu ;;
+        *) echo "无效选项，请重试" && another_menu ;;
+    esac
+}
+
+# 根据参数执行不同的菜单
+if [ "$1" == "tcp" ]; then
+    tcp_menu
+elif [ "$1" == "another" ]; then
+    another_menu
+else
+    main_menu
 fi
 
 
@@ -548,4 +588,4 @@ fi
 
 
 # sleep 1 && 
-clun_tcp
+# clun_tcp
