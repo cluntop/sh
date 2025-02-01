@@ -523,7 +523,7 @@ done
 case $1 in
     "tcp")
       # 设置定时任务字符串
-      cron_clun="0 * * * * curl -sL clun.top | bash -s -- tcp"
+      cron_clun="0 * * * * curl -sL clun.top | bash -s -- sysctl"
       # 检查是否存在相同的定时任务
       clun_cron=$(crontab -l 2>/dev/null | grep -Fq "$cron_clun")
       # 如果不存在，则添加定时任务
@@ -535,6 +535,7 @@ case $1 in
         echo "优化内核任务已删除"
       fi
       ;;
+    "sysctl") Install_sysctl ;;
     *) clun_tcp ;;
 esac
 
