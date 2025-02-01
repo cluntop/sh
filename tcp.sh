@@ -312,7 +312,6 @@ net.ipv4.tcp_retries2 = 5
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
 
-# Ref: https://linuxgeeks.github.io/2017/03/20/212135-Linux%E5%86%85%E6%A0%B8%E5%8F%82%E6%95%B0rp_filter/
 # 开启反向路径过滤
 # Aliyun 负载均衡实例后端的 ECS 需要设置为 0
 net.ipv4.conf.default.rp_filter = 0
@@ -322,7 +321,6 @@ net.ipv4.conf.all.rp_filter = 0
 # 连接状态的时间使系统可以处理更多的连接
 net.ipv4.tcp_fin_timeout = 15
 
-# Ref: https://xwl-note.readthedocs.io/en/latest/linux/tuning.html
 # 默认情况下一个 TCP 连接关闭后, 把这个连接曾经有的参数保存到dst_entry中
 # 只要 dst_entry 没有失效, 下次新建立相同连接的时候就可以使用保存的参数来初始化这个连接.
 # 通常情况下是关闭的, 高并发配置为 1.
@@ -335,7 +333,6 @@ net.ipv4.route.gc_timeout = 100
 net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
-# Ref: https://gist.github.com/lixingcong/0e13b4123d29a465e364e230b2e45f60
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
 net.ipv4.tcp_mtu_probing = 0
 
@@ -343,7 +340,6 @@ net.ipv4.tcp_mtu_probing = 0
 net.ipv4.udp_rmem_min = 8192
 net.ipv4.udp_wmem_min = 8192
 
-# No Ref
 # 开启并记录欺骗, 源路由和重定向包
 # net.ipv4.conf.all.log_martians = 1
 # net.ipv4.conf.default.log_martians = 1
@@ -381,7 +377,7 @@ net.ipv4.conf.all.arp_announce = 2
 
 # Ref: Aliyun, etc
 # 内核 Panic 后 1 秒自动重启
-#kernel.panic = 0
+# kernel.panic = 0
 # 允许更多的PIDs, 减少滚动翻转问题
 # kernel.pid_max = 32768
 # 内核所允许的最大共享内存段的大小（bytes）
@@ -391,7 +387,7 @@ net.ipv4.conf.all.arp_announce = 2
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
 # 当发生oom时, 自动转换为panic
-#vm.panic_on_oom = 0
+# vm.panic_on_oom = 0
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
 vm.dirty_background_ratio = 5
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
@@ -419,11 +415,9 @@ kernel.numa_balancing = 0
 # IPv4 TCP 低延迟参数
 net.ipv4.tcp_low_latency = 0
 
-# Ref: https://gist.github.com/lixingcong/0e13b4123d29a465e364e230b2e45f60
 # 当某个节点可用内存不足时, 系统会倾向于从其他节点分配内存. 对 Mongo/Redis 类 cache 服务器友好
 vm.zone_reclaim_mode = 2
 
-# Ref: Unknwon
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
 # 在无线环境下特别有益处, 因为在这种环境下分组丢失典型地是因为随机无线电干扰而不是中间路由器阻塞
 # net.ipv4.tcp_frto = 1
@@ -485,7 +479,7 @@ if [ ! -f "$file_sysctl" ]; then
     echo "$file_sysctl 文件不存在，开始执行 ln"
     ln -s /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
 else
-    echo "$file_sysctl 文件存在，不执行 ln"
+    echo "99-sysctl.conf 文件存在，不执行 ln"
 fi
 
 sysctl_p
@@ -529,13 +523,15 @@ done
 case $1 in
     "tcp")
 	  # 设置定时任务字符串
-	  cron_clun="0 * * * * /bin/bash -c bash <(curl -sL clun.top) tcp"
+	  cron_clun="0 * * * * /bin/bash -c '’bash <(curl -sL clun.top) tcp'"
 	  # 检查是否存在相同的定时任务
 	  clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
 	  # 如果不存在，则添加定时任务
 	  if [ -z "$clun_cron" ]; then
 	    (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
 		echo "优化内核任务已添加"
+	  else
+	    echo "优化内核已存在，无需添加"
 	  fi
 	  ;;
     *) clun_tcp ;;
