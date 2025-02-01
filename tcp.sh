@@ -520,5 +520,19 @@ while true; do
 done
 }
 
+if [ "$#" -eq 0 ]; then
+	# 如果没有参数，运行交互式逻辑
+	clun_top
+else
+	case $1 in
+  tcp)
+   Install_sysctl
+   ;;
+		*)
+			clun_top
+			;;
+	esac
+fi
+
 # sleep 1 && 
 clun_tcp
