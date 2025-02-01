@@ -300,7 +300,7 @@ net.ipv4.tcp_sack = 1
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 它主要用于控制TCP连接在发生超时后的快速恢复策略。
-net.ipv4.tcp_frto = 2
+net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 2
 # TCP SYN 连接超时重传次数
@@ -539,7 +539,7 @@ done
 # 根据参数执行逻辑
 case $1 in
     "tcp") Install_sysctl ;;
-    *) clun_top ;;  # 无参数时进入主菜单
+    *) clun_tcp ;;  # 无参数时进入主菜单
 esac
 
 
