@@ -235,11 +235,11 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 536870912
-net.core.rmem_max = 33554432
+net.core.rmem_default = 65535
+net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 536870912
-net.core.wmem_max = 33554432
+net.core.wmem_default = 65535
+net.core.wmem_max = 536870912
 
 # 由左往右为 最小值 默认值 最大值
 # 有条件建议依据实测结果调整 tcp_rmem, tcp_wmem 相关数值
