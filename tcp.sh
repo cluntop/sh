@@ -525,7 +525,7 @@ case $1 in
       # 设置定时任务字符串
       cron_clun="0 * * * * curl -sL clun.top | bash -s -- sysctl"
       # 检查是否存在相同的定时任务
-      clun_cron="crontab -l 2>/dev/null | grep -Fq '$cron_clun'"
+      clun_cron="crontab -l 2>/dev/null | grep -Fq $cron_clun"
       # 如果不存在，则添加定时任务
       if [ -z "$clun_cron" ]; then
         (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
