@@ -70,20 +70,20 @@ fi
 
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
-* soft     nproc          1000000
-* hard     nproc          1000000
-* soft     nofile         1000000
-* hard     nofile         1000000
+* soft     nproc          1024000
+* hard     nproc          1024000
+* soft     nofile         1024000
+* hard     nofile         1024000
 
-root soft     nproc          1000000
-root hard     nproc          1000000
-root soft     nofile         1000000
-root hard     nofile         1000000
+root soft     nproc          1024000
+root hard     nproc          1024000
+root soft     nofile         1024000
+root hard     nofile         1024000
 
-bro soft     nproc          1000000
-bro hard     nproc          1000000
-bro soft     nofile         1000000
-bro hard     nofile         1000000
+bro soft     nproc          1024000
+bro hard     nproc          1024000
+bro soft     nofile         1024000
+bro hard     nofile         1024000
 EOF
 }
 
@@ -277,7 +277,7 @@ net.netfilter.nf_conntrack_buckets = 655360
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_established = 36000
+net.netfilter.nf_conntrack_tcp_timeout_established = 3600
 # TIME-WAIT 状态调优
 # Ref: http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html
 # Ref: https://www.cnblogs.com/lulu/p/4149312.html
@@ -366,8 +366,8 @@ net.ipv4.tcp_max_orphans = 65535
 # net.ipv6.neigh.default.gc_thresh3 = 1024
 # net.ipv6.neigh.default.gc_thresh2 = 512
 # net.ipv6.neigh.default.gc_thresh1 = 128
-net.ipv4.neigh.default.gc_stale_time = 120
-net.ipv6.neigh.default.gc_stale_time = 120
+net.ipv4.neigh.default.gc_stale_time = 60
+net.ipv6.neigh.default.gc_stale_time = 60
 net.ipv4.conf.default.arp_announce = 2
 net.ipv4.conf.lo.arp_announce = 2
 net.ipv4.conf.all.arp_announce = 2
@@ -447,8 +447,8 @@ net.ipv6.conf.all.autoconf = 1
 net.ipv6.conf.eth0.autoconf = 1
 
 # 控制所有接口是否接受路由器通告（Router Advertisements, RA）
-net.ipv6.conf.all.accept_ra = 1
-net.ipv6.conf.eth0.accept_ra = 1
+net.ipv6.conf.all.accept_ra = 2
+net.ipv6.conf.eth0.accept_ra = 2
 
 # 1 = IPv4 优先 / 0 = 6 优先
 # net.ipv6.conf.all.disable_ipv6 = 1
