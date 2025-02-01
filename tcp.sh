@@ -533,7 +533,7 @@ main_menu() {
     echo "欢迎使用菜单脚本"
     echo "1. 显示 TCP 菜单"
     echo "2. 显示另一个菜单"
-    echo "3. 退出"
+    echo "3. 退出 1"
     read -p "请输入选项: " choice
     case $choice in
         1) tcp_menu ;;
@@ -548,7 +548,7 @@ tcp_menu() {
     echo "这是 TCP 菜单"
     echo "1. 查看 TCP 连接"
     echo "2. 测试 TCP 端口"
-    echo "3. 返回主菜单"
+    echo "3. 返回主菜单 2"
     read -p "请输入选项: " choice
     case $choice in
         1) echo "显示 TCP 连接..." && sleep 2 && tcp_menu ;;
@@ -563,7 +563,7 @@ another_menu() {
     echo "这是另一个菜单"
     echo "1. 选项 A"
     echo "2. 选项 B"
-    echo "3. 返回主菜单"
+    echo "3. 返回主菜单 3"
     read -p "请输入选项: " choice
     case $choice in
         1) echo "执行选项 A..." && sleep 2 && another_menu ;;
