@@ -254,7 +254,7 @@ net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
 net.core.netdev_max_backlog = 102400
 # 181920 listen 函数的 backlog 参数
-net.ipv4.tcp_max_syn_backlog = 30720
+net.ipv4.tcp_max_syn_backlog = 65535
 net.core.somaxconn = 10240
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
@@ -275,9 +275,9 @@ net.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_buckets = 655360
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_established = 3600
+net.netfilter.nf_conntrack_tcp_timeout_time_wait = 120
+net.netfilter.nf_conntrack_tcp_timeout_close_wait = 120
+net.netfilter.nf_conntrack_tcp_timeout_established = 86400
 # TIME-WAIT 状态调优
 # Ref: http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html
 # Ref: https://www.cnblogs.com/lulu/p/4149312.html
