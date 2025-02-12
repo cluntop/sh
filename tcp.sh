@@ -220,7 +220,7 @@ net.ipv4.tcp_invalid_ratelimit = 10000
 # net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
-# net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_timestamps = 1
 # ------ END 网络调优: 基本 ------
 
 # ------ 网络调优: 内核 Backlog 队列和缓存相关 ------
@@ -235,10 +235,10 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 65535
+net.core.rmem_default = 33554432
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 65535
+net.core.wmem_default = 33554432
 net.core.wmem_max = 536870912
 
 # 由左往右为 最小值 默认值 最大值
