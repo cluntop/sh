@@ -405,7 +405,7 @@ kernel.core_pattern = core_%e
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
 vm.dirty_background_ratio = 2
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
-# vm.min_free_kbytes = 131072
+vm.min_free_kbytes = 0
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 50
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
