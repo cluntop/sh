@@ -147,8 +147,8 @@ cat >/etc/sysctl.conf<<EOF
 # See sysctl.conf (5) for information.
 #
 
-net.core.default_qdisc=fq_pie
-net.ipv4.tcp_congestion_control=bbr2
+net.core.default_qdisc=cake
+net.ipv4.tcp_congestion_control=bbr
 
 net.ipv4.tcp_invalid_ratelimit = 10000
 
@@ -235,12 +235,13 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 67108864
+net.core.rmem_default = 524288
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 67108864
+net.core.wmem_default = 524288
 net.core.wmem_max = 536870912
-
+# 控制单个套接字（socket）可分配的附加选项内存的最大值。
+net.core.optmem_max = 67108864
 # 由左往右为 最小值 默认值 最大值
 # 有条件建议依据实测结果调整 tcp_rmem, tcp_wmem 相关数值
 # 个人实测差别不大, 可能是我网本来就比较好
@@ -248,14 +249,14 @@ net.core.wmem_max = 536870912
 net.ipv4.tcp_rmem = 65534 37500000 536870912
 net.ipv4.tcp_wmem = 65534 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
-# net.ipv4.tcp_collapse_max_bytes = 6291456
-# net.ipv4.tcp_notsent_lowat = 131072
+net.ipv4.tcp_collapse_max_bytes = 6291456
+net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 102400
+net.core.netdev_max_backlog = 32768
 # 181920 listen 函数的 backlog 参数
 net.ipv4.tcp_max_syn_backlog = 65535
-net.core.somaxconn = 10240
+net.core.somaxconn = 102400
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -287,7 +288,7 @@ net.netfilter.nf_conntrack_tcp_timeout_established = 86400
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 100000
+net.ipv4.tcp_max_tw_buckets = 32768
 # ------ END 网络调优: 内核 Backlog 队列和缓存相关 ------
 
 # ------ 网络调优: 其他 ------
@@ -307,6 +308,8 @@ net.ipv4.tcp_ecn = 0
 net.ipv4.tcp_syn_retries = 2
 net.ipv4.tcp_synack_retries = 2
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
+# 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
+net.ipv4.tcp_retries1 = 3
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
 net.ipv4.tcp_retries2 = 5
 # 开启 SYN 洪水攻击保护
@@ -335,6 +338,14 @@ net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
 net.ipv4.tcp_mtu_probing = 0
+# 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
+net.ipv4.tcp_no_metrics_save = 1
+# 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
+net.ipv4.tcp_init_cwnd = 32
+# 控制 TCP 紧急指针（Urgent Pointer） 的解释方式。
+net.ipv4.tcp_stdurg = 0
+# 控制是否启用 路径 MTU 发现（Path MTU Discovery, PMTUD）。
+net.ipv4.ip_no_pmtu_disc = 0
 
 # 用于指定UDP（用户数据报协议）接收缓冲区的最小大小。
 net.ipv4.udp_rmem_min = 8192
@@ -346,58 +357,61 @@ net.ipv4.udp_wmem_min = 8192
 # 处理无源路由的包
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
-# TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 600
 # 最大失败次数, 超过此值后将通知应用层连接失效
-net.ipv4.tcp_keepalive_probes = 6
+net.ipv4.tcp_keepalive_probes = 10
+# TCP KeepAlive 调优 # 最大闲置时间
+net.ipv4.tcp_keepalive_time = 60
 # 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl = 60
-# 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
-net.ipv4.tcp_retries1 = 3
+net.ipv4.tcp_keepalive_intvl = 6
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
 # 系统中最多有多少个 TCP 套接字不被关联到任何一个用户文件句柄上
-net.ipv4.tcp_max_orphans = 65535
+net.ipv4.tcp_max_orphans = 32768
 # arp_table的缓存限制优化
-# net.ipv4.neigh.default.gc_thresh1 = 128
-# net.ipv4.neigh.default.gc_thresh2 = 512
-# net.ipv4.neigh.default.gc_thresh3 = 1024
-# net.ipv6.neigh.default.gc_thresh3 = 1024
-# net.ipv6.neigh.default.gc_thresh2 = 512
-# net.ipv6.neigh.default.gc_thresh1 = 128
-net.ipv4.neigh.default.gc_stale_time = 60
-net.ipv6.neigh.default.gc_stale_time = 60
+net.ipv4.neigh.default.gc_thresh1 = 512
+net.ipv4.neigh.default.gc_thresh2 = 2048
+net.ipv4.neigh.default.gc_thresh3 = 4096
+net.ipv6.neigh.default.gc_thresh3 = 4096
+net.ipv6.neigh.default.gc_thresh2 = 2048
+net.ipv6.neigh.default.gc_thresh1 = 512
+net.ipv4.neigh.default.gc_stale_time = 120
+net.ipv6.neigh.default.gc_stale_time = 120
 net.ipv4.conf.default.arp_announce = 2
 net.ipv4.conf.lo.arp_announce = 2
 net.ipv4.conf.all.arp_announce = 2
+# 用于控制系统在响应 ARP 请求时的行为。
+net.ipv4.conf.all.arp_ignore = 1
+net.ipv4.conf.default.arp_ignore = 1
 # ------ END 网络调优: 其他 ------
 
 # ------ 内核调优 ------
 
 # Ref: Aliyun, etc
 # 内核 Panic 后 1 秒自动重启
-# kernel.panic = 0
+# kernel.panic = 1
 # 允许更多的PIDs, 减少滚动翻转问题
-# kernel.pid_max = 32768
+# kernel.pid_max = 65535
 # 内核所允许的最大共享内存段的大小（bytes）
 # kernel.shmmax = 4294967296
 # 在任何给定时刻, 系统上可以使用的共享内存的总量（pages）
 # kernel.shmall = 1073741824
+# 取消注释以下内容以停止控制台上的低级消息
+kernel.printk = 3 4 1 3
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
 # 当发生oom时, 自动转换为panic
 # vm.panic_on_oom = 0
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
-vm.dirty_background_ratio = 5
+vm.dirty_background_ratio = 2
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
-vm.min_free_kbytes = 128
+vm.min_free_kbytes = 131072
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 50
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
-vm.swappiness = 10
+vm.swappiness = 5
 # 仅用10%做为系统cache
-vm.dirty_ratio = 10
+vm.dirty_ratio = 5
 vm.overcommit_memory = 1
 # 增加系统文件描述符限制
 # Fix error: too many open files
