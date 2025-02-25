@@ -256,7 +256,7 @@ net.ipv4.ip_local_port_range = 1024 65535
 net.core.netdev_max_backlog = 32768
 # 181920 listen 函数的 backlog 参数
 net.ipv4.tcp_max_syn_backlog = 65535
-net.core.somaxconn = 102400
+net.core.somaxconn = 10240
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -405,7 +405,7 @@ kernel.core_pattern = core_%e
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
 vm.dirty_background_ratio = 2
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
-vm.min_free_kbytes = 131072
+# vm.min_free_kbytes = 131072
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 50
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
