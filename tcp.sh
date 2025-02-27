@@ -45,7 +45,7 @@ break_end() {
 }
 
 update_script() {
-local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
+local version_new=$(curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
 
 if [ "$version" = "$version_new" ]; then
     echo "你已经是最新版本！"
@@ -130,7 +130,7 @@ sysctl --system >/dev/null 2>&1
 }
 
 kejilion_sh() {
-curl -sS -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+curl -sS -O https://gh.clun.top/raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
 }
 
 Install_All() {
