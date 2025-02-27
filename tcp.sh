@@ -2,7 +2,7 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.0.2"
+version="1.0.3"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -24,17 +24,17 @@ cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
 # 获取系统内存大小（以 MB 为单位）
-size_mb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-tcp_low=$(echo "$size_mb * 4096 / 8" | bc)
-tcp_mid=$(echo "$size_mb * 4096 / 4" | bc)
-tcp_high=$(echo "$size_mb * 4096 / 2" | bc)
+tcp_low=$(echo "$size_mb * 5120 / 25.6" | bc)
+tcp_mid=$(echo "$size_mb * 10240 / 25.6" | bc)
+tcp_high=$(echo "$size_mb * 20480 / 25.6" | bc)
 
-udp_low=$(echo "$size_mb * 2048 / 8" | bc)
-udp_mid=$(echo "$size_mb * 2048 / 4" | bc)
-udp_high=$(echo "$size_mb * 2048 / 2" | bc)
+udp_low=$(echo "$size_mb * 4096 / 15.6" | bc)
+udp_mid=$(echo "$size_mb * 20480 / 15.6" | bc)
+udp_high=$(echo "$size_mb * 30720 / 15.6" | bc)
 
-conntrack_max=$(echo "$size_mb * 1024 / 16384 / 2" | bc)
+conntrack_max=$(echo "$size_mb * 300 / 2" | bc)
 
 break_end() {
     echo "操作完成"
@@ -57,7 +57,7 @@ fi
     read -e -p "请输入你的选择: " choice
       case "$choice" in
       1)
-        curl -o clun_tcp.sh https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
+        curl -o clun_tcp.sh https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
         cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
         ;;
       2)
@@ -141,80 +141,6 @@ Install_sysctl() {
 
 cat >/etc/sysctl.conf<<EOF
 
-#
-# /etc/sysctl.conf - Configuration file for setting system variables
-# See /etc/sysctl.d/ for additional system variables.
-# See sysctl.conf (5) for information.
-#
-
-net.core.default_qdisc=cake
-net.ipv4.tcp_congestion_control=bbr
-
-net.ipv4.tcp_invalid_ratelimit = 10000
-
-#kernel.domainname = example.com
-
-# Uncomment the following to stop low-level messages on console
-#kernel.printk = 3 4 1 3
-
-###################################################################
-# Functions previously found in netbase
-#
-
-# Uncomment the next two lines to enable Spoof protection (reverse-path filter)
-# Turn on Source Address Verification in all interfaces to
-# prevent some spoofing attacks
-#net.ipv4.conf.default.rp_filter=1
-#net.ipv4.conf.all.rp_filter=1
-
-# Uncomment the next line to enable TCP/IP SYN cookies
-# See http://lwn.net/Articles/277146/
-# Note: This may impact IPv6 TCP sessions too
-#net.ipv4.tcp_syncookies=1
-
-# Uncomment the next line to enable packet forwarding for IPv4
-#net.ipv4.ip_forward=1
-
-# Uncomment the next line to enable packet forwarding for IPv6
-#  Enabling this option disables Stateless Address Autoconfiguration
-#  based on Router Advertisements for this host
-#net.ipv6.conf.all.forwarding=1
-
-
-###################################################################
-# Additional settings - these settings can improve the network
-# security of the host and prevent against some network attacks
-# including spoofing attacks and man in the middle attacks through
-# redirection. Some network environments, however, require that these
-# settings are disabled so review and enable them as needed.
-#
-# Do not accept ICMP redirects (prevent MITM attacks)
-#net.ipv4.conf.all.accept_redirects = 0
-#net.ipv6.conf.all.accept_redirects = 0
-# _or_
-# Accept ICMP redirects only for gateways listed in our default
-# gateway list (enabled by default)
-# net.ipv4.conf.all.secure_redirects = 1
-#
-# Do not send ICMP redirects (we are not a router)
-#net.ipv4.conf.all.send_redirects = 0
-#
-# Do not accept IP source route packets (we are not a router)
-#net.ipv4.conf.all.accept_source_route = 0
-#net.ipv6.conf.all.accept_source_route = 0
-#
-# Log Martian Packets
-#net.ipv4.conf.all.log_martians = 1
-#
-
-###################################################################
-# Magic system request Key
-# 0=disable, 1=enable all, >1 bitmask of sysrq functions
-# See https://www.kernel.org/doc/html/latest/admin-guide/sysrq.html
-# for what other values do
-#kernel.sysrq=438
-
-
 # ------ 网络调优: 基本 ------
 # TTL 配置, Linux 默认 64
 # net.ipv4.ip_default_ttl = 64
@@ -224,39 +150,29 @@ net.ipv4.tcp_timestamps = 1
 # ------ END 网络调优: 基本 ------
 
 # ------ 网络调优: 内核 Backlog 队列和缓存相关 ------
-# Ref: https://www.starduster.me/2020/03/02/linux-network-tuning-kernel-parameter/
-# Ref: https://blog.cloudflare.com/optimizing-tcp-for-high-throughput-and-low-latency/
-# Ref: https://zhuanlan.zhihu.com/p/149372947
-# https://github.com/torvalds/linux/blob/87d6aab2389e5ce0197d8257d5f8ee965a67c4cd/net/ipv4/tcp_output.c#L241-L248
-#net.ipv4. tcp_mem = 65536 131072 12582912
-#net.ipv4. udp_mem = 65536 131072 12582912
 
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 8388608
+net.core.rmem_default = 16777216
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 8388608
+net.core.wmem_default = 16777216
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
-net.core.optmem_max = 67108864
-# 由左往右为 最小值 默认值 最大值
-# 有条件建议依据实测结果调整 tcp_rmem, tcp_wmem 相关数值
-# 个人实测差别不大, 可能是我网本来就比较好
+net.core.optmem_max = 8388608
 # 缓冲区相关配置均和内存相关 # 6291456
 net.ipv4.tcp_rmem = 65534 37500000 536870912
 net.ipv4.tcp_wmem = 65534 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
-net.ipv4.tcp_collapse_max_bytes = 6291456
+net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 32768
-# 181920 listen 函数的 backlog 参数
-net.ipv4.tcp_max_syn_backlog = 65535
-net.core.somaxconn = 10240
+net.core.netdev_max_backlog = 102400
+net.ipv4.tcp_max_syn_backlog = 102400
+net.core.somaxconn = 102400
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -265,20 +181,16 @@ net.core.netdev_budget_usecs = 5000
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
 net.ipv4.tcp_window_scaling = 1
-# 开启后, TCP 拥塞窗口会在一个 RTO 时间
-# 空闲之后重置为初始拥塞窗口 (CWND) 大小.
-# 大部分情况下, 尤其是大流量长连接, 设置为 0.
-# 对于网络情况时刻在相对剧烈变化的场景, 设置为 1.
+# TCP 拥塞窗口会在一个 RTO 时间
 net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
-# Add Ref: https://gist.github.com/lixingcong/0e13b4123d29a465e364e230b2e45f60
 net.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_buckets = 655360
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_time_wait = 120
-net.netfilter.nf_conntrack_tcp_timeout_close_wait = 120
-net.netfilter.nf_conntrack_tcp_timeout_established = 86400
+net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
+net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15
+net.netfilter.nf_conntrack_tcp_timeout_established = 300
 # TIME-WAIT 状态调优
 # Ref: http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html
 # Ref: https://www.cnblogs.com/lulu/p/4149312.html
@@ -288,7 +200,7 @@ net.netfilter.nf_conntrack_tcp_timeout_established = 86400
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 32768
+net.ipv4.tcp_max_tw_buckets = 55000
 # ------ END 网络调优: 内核 Backlog 队列和缓存相关 ------
 
 # ------ 网络调优: 其他 ------
@@ -309,9 +221,9 @@ net.ipv4.tcp_syn_retries = 2
 net.ipv4.tcp_synack_retries = 2
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
-net.ipv4.tcp_retries1 = 3
+net.ipv4.tcp_retries1 = 5
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
-net.ipv4.tcp_retries2 = 5
+net.ipv4.tcp_retries2 = 8
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
 
@@ -357,17 +269,17 @@ net.ipv4.udp_wmem_min = 8192
 # 处理无源路由的包
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
-# 最大失败次数, 超过此值后将通知应用层连接失效
-net.ipv4.tcp_keepalive_probes = 10
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 60
-# 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl = 6
+net.ipv4.tcp_keepalive_time = 7200
+# 最大失败次数, 超过此值后将通知应用层连接失效
+net.ipv4.tcp_keepalive_probes = 3
+# 缩短 tcp keepalive 发送探测包的时间间隔
+net.ipv4.tcp_keepalive_intvl = 15
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
 # 系统中最多有多少个 TCP 套接字不被关联到任何一个用户文件句柄上
-net.ipv4.tcp_max_orphans = 32768
+net.ipv4.tcp_max_orphans = 65536
 # arp_table的缓存限制优化
 net.ipv4.neigh.default.gc_thresh1 = 512
 net.ipv4.neigh.default.gc_thresh2 = 2048
@@ -430,7 +342,7 @@ kernel.numa_balancing = 0
 net.ipv4.tcp_low_latency = 0
 
 # 当某个节点可用内存不足时, 系统会倾向于从其他节点分配内存. 对 Mongo/Redis 类 cache 服务器友好
-vm.zone_reclaim_mode = 2
+vm.zone_reclaim_mode = 3
 
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
@@ -466,6 +378,8 @@ net.ipv6.conf.eth0.accept_ra = 2
 
 # 1 = IPv4 优先 / 0 = 6 优先
 # net.ipv6.conf.all.disable_ipv6 = 1
+# net.ipv6.conf.default.disable_ipv6 = 1
+# net.ipv6.conf.lo.disable_ipv6 = 1
 
 # 控制未解析（unresolved）的邻居（neighbor）项队列长度。
 net.ipv4.neigh.default.unres_qlen = 1000
