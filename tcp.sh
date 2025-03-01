@@ -155,13 +155,13 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 2097152
+net.core.rmem_default = 1048576
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 2097152
+net.core.wmem_default = 1048576
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
-net.core.optmem_max = 33554432
+net.core.optmem_max = 67108864
 # 缓冲区相关配置均和内存相关 # 6291456
 net.ipv4.tcp_rmem = 65534 37500000 536870912
 net.ipv4.tcp_wmem = 65534 37500000 536870912
@@ -170,9 +170,9 @@ net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 102400
-net.ipv4.tcp_max_syn_backlog = 102400
-net.core.somaxconn = 102400
+net.core.netdev_max_backlog = 55000
+net.ipv4.tcp_max_syn_backlog = 65535
+net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -186,7 +186,7 @@ net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
 net.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_max = $conntrack_max
-net.netfilter.nf_conntrack_buckets = 655360
+net.netfilter.nf_conntrack_buckets = 555000
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15
