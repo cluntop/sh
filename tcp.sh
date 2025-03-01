@@ -141,6 +141,9 @@ Install_sysctl() {
 
 cat >/etc/sysctl.conf<<EOF
 
+net.ipv4.tcp_congestion_control=bbr
+net.core.default_qdisc=cake
+
 # ------ 网络调优: 基本 ------
 # TTL 配置, Linux 默认 64
 # net.ipv4.ip_default_ttl = 64
