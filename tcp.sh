@@ -146,7 +146,7 @@ cat >/etc/sysctl.conf<<EOF
 # net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
-net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_timestamps = 0
 # ------ END 网络调优: 基本 ------
 
 # ------ 网络调优: 内核 Backlog 队列和缓存相关 ------
@@ -156,10 +156,10 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # 全局套接字默认接受缓冲区 # 212992
 net.core.rmem_default = 1048576
-net.core.rmem_max = 536870912
+net.core.rmem_max = 134217728
 # 全局套接字默认发送缓冲区 # 212992
 net.core.wmem_default = 1048576
-net.core.wmem_max = 536870912
+net.core.wmem_max = 134217728
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 67108864
 # 缓冲区相关配置均和内存相关 # 6291456
@@ -170,9 +170,9 @@ net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 55000
+net.core.netdev_max_backlog = 250000
 net.ipv4.tcp_max_syn_backlog = 65535
-net.core.somaxconn = 65535
+net.core.somaxconn = 1024000
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -190,7 +190,7 @@ net.netfilter.nf_conntrack_buckets = 555000
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15
-net.netfilter.nf_conntrack_tcp_timeout_established = 300
+net.netfilter.nf_conntrack_tcp_timeout_established = 180
 # TIME-WAIT 状态调优
 # Ref: http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html
 # Ref: https://www.cnblogs.com/lulu/p/4149312.html
@@ -200,12 +200,10 @@ net.netfilter.nf_conntrack_tcp_timeout_established = 300
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 55000
+net.ipv4.tcp_max_tw_buckets = 16384
 # ------ END 网络调优: 内核 Backlog 队列和缓存相关 ------
 
 # ------ 网络调优: 其他 ------
-# Ref: https://zhuanlan.zhihu.com/p/149372947
-# Ref: https://www.starduster.me/2020/03/02/linux-network-tuning-kernel-parameter/\#netipv4tcp_max_syn_backlog_netipv4tcp_syncookies
 # 启用选择应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_sack = 1
@@ -217,8 +215,8 @@ net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
-net.ipv4.tcp_syn_retries = 2
-net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 3
+net.ipv4.tcp_synack_retries = 3
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 5
@@ -234,7 +232,7 @@ net.ipv4.conf.all.rp_filter = 0
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_fin_timeout = 10
 
 # 默认情况下一个 TCP 连接关闭后, 把这个连接曾经有的参数保存到dst_entry中
 # 只要 dst_entry 没有失效, 下次新建立相同连接的时候就可以使用保存的参数来初始化这个连接.
@@ -249,7 +247,7 @@ net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
-net.ipv4.tcp_mtu_probing = 0
+net.ipv4.tcp_mtu_probing = 1
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
 net.ipv4.tcp_no_metrics_save = 1
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
@@ -260,8 +258,8 @@ net.ipv4.tcp_stdurg = 0
 net.ipv4.ip_no_pmtu_disc = 0
 
 # 用于指定UDP（用户数据报协议）接收缓冲区的最小大小。
-net.ipv4.udp_rmem_min = 8192
-net.ipv4.udp_wmem_min = 8192
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
 
 # 开启并记录欺骗, 源路由和重定向包
 # net.ipv4.conf.all.log_martians = 1
@@ -290,8 +288,8 @@ net.ipv6.neigh.default.gc_thresh1 = 512
 net.ipv4.neigh.default.gc_stale_time = 120
 net.ipv6.neigh.default.gc_stale_time = 120
 net.ipv4.conf.default.arp_announce = 2
-net.ipv4.conf.lo.arp_announce = 2
 net.ipv4.conf.all.arp_announce = 2
+net.ipv4.conf.lo.arp_announce = 2
 # 用于控制系统在响应 ARP 请求时的行为。
 net.ipv4.conf.all.arp_ignore = 1
 net.ipv4.conf.default.arp_ignore = 1
