@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.0.3"
-version_test="116"
+version_test="117"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -32,8 +32,8 @@ tcp_mid=$(echo "$size_mb * 10240 / 25.6" | bc)
 tcp_high=$(echo "$size_mb * 20480 / 25.6" | bc)
 
 udp_low=$(echo "$size_mb * 4096 / 15.6" | bc)
-udp_mid=$(echo "$size_mb * 20480 / 15.6" | bc)
-udp_high=$(echo "$size_mb * 30720 / 15.6" | bc)
+udp_mid=$(echo "$size_mb * 8196 / 15.6" | bc)
+udp_high=$(echo "$size_mb * 12288 / 15.6" | bc)
 
 conntrack_max=$(echo "$size_mb * 300 / 2" | bc)
 
