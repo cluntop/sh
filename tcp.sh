@@ -3,6 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.0.3"
+version_test="1"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -57,7 +58,7 @@ fi
     read -e -p "请输入你的选择: " choice
       case "$choice" in
       1)
-        curl -o clun_tcp.sh https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh && chmod +x clun_tcp.sh
+        curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh
         cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
         ;;
       2)
@@ -121,7 +122,7 @@ sed -i "s/#*net.ipv4.udp_mem =.*/net.ipv4.udp_mem = $udp_low $udp_mid $udp_high/
 }
 
 cleaning_trash() {
-sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s; sudo dpkg -l | grep '^rc' | awk '{print $2}' | sudo xargs dpkg --purge; sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge; docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; rm -rf ~/Downloads/*; rm -rf ~/.cache/thumbnails/*; rm -rf ~/.mozilla/firefox/*.default-release/cache2/*; sudo apt-get clean; dpkg --list | grep linux-image | grep -v `uname -r` | awk '{print $2}' | xargs sudo apt-get remove --purge -y
+curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/refs/heads/main/cleaning_trash.sh && chmod +x cleaning_trash.sh && ./cleaning_trash.sh
 }
 
 sysctl_p() {
@@ -130,7 +131,7 @@ sysctl --system >/dev/null 2>&1
 }
 
 kejilion_sh() {
-curl -sS -O https://gh.clun.top/raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+curl -s -O https://gh.clun.top/raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
 }
 
 Install_All() {
@@ -415,14 +416,14 @@ tcp_info() {
 echo "---"
 echo "以下是命令参考用例："
 echo "启动脚本 tcp"
-echo "优化内核 tcp sysctl"
-echo "优化内核任务 tcp tcp"
+echo "优化内核 tcp tcp"
+echo "优化内核任务 tcp sys"
 }
 
 clun_tcp() {
 while true; do
     clear
-    echo "当前版本 v$version"
+    echo "当前版本 v$version($version_test)"
     echo "更新提交问题 t.me/clungit"
     echo "命令行输入 tcp 可快速启动脚本"
     echo "---"
@@ -455,7 +456,7 @@ done
 }
 
 case $1 in
-    "tcp")
+    "sys")
       # 设置定时任务字符串
       cron_clun="0 * * * * curl -sL clun.top | bash -s -- sysctl"
       # 检查是否存在相同的定时任务
@@ -469,7 +470,7 @@ case $1 in
         echo "优化内核任务已删除"
       fi
       ;;
-    "sysctl") Install_sysctl ;;
+    "tcp") Install_sysctl ;;
     *) sleep 1 && clun_tcp ;;
 esac
 
