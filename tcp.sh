@@ -424,7 +424,7 @@ clun_tcp() {
 while true; do
     clear
     echo "当前版本 v$version($version_test)"
-    echo "更新提交问题 t.me/clungit"
+    echo "更新提交问题 t.me/clun_top"
     echo "命令行输入 tcp 可快速启动脚本"
     echo "---"
     echo "1. 优化全部 2. 优化限制"
