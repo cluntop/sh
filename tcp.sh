@@ -11,11 +11,6 @@ YELLOW='\033[33m'
 BLUE='\033[34m'
 RESET='\033[0m'
 
-if [ $EUID -ne 0 ]; then
-  echo "错误：此脚本必须以 root 身份运行!"
-  exit
-fi
-
 sed -i '/^alias tcp=/d' ~/.bashrc > /dev/null 2>&1
 sed -i '/^alias tcp=/d' ~/.profile > /dev/null 2>&1
 sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
@@ -58,9 +53,6 @@ fi
       1)
         curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh
         cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
-        ;;
-      2)
-	    bash <(curl -sL clun.top)
         ;;
       *) clun_tcp ;;
     esac
