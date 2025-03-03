@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.0.3"
-version_test="117"
+version_test="118"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -11,11 +11,9 @@ YELLOW='\033[33m'
 BLUE='\033[34m'
 RESET='\033[0m'
 
-if [[ $EUID -ne 0 ]]; then
-    clear
-    echo "Error: This script must be run as root!"
-    echo "错误：此脚本必须以 root 身份运行!"
-    exit 1
+if [ $EUID -ne 0 ]; then
+  echo "错误：此脚本必须以 root 身份运行!"
+  exit
 fi
 
 sed -i '/^alias tcp=/d' ~/.bashrc > /dev/null 2>&1
@@ -62,8 +60,8 @@ fi
         cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
         ;;
       2)
-        bash <(curl -sL clun.top)
-           ;;
+	    bash <(curl -sL clun.top)
+        ;;
       *) clun_tcp ;;
     esac
       break_end
