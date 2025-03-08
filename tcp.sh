@@ -174,7 +174,7 @@ net.core.netdev_budget = 50000
 net.core.netdev_budget_usecs = 5000
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
-net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_window_scaling = 0
 # TCP 拥塞窗口会在一个 RTO 时间
 net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
@@ -200,7 +200,7 @@ net.ipv4.tcp_max_tw_buckets = 16384
 # ------ 网络调优: 其他 ------
 # 启用选择应答
 # 对于广域网通信应当启用
-net.ipv4.tcp_sack = 1
+net.ipv4.tcp_sack = 0
 # 启用转发应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
@@ -227,11 +227,6 @@ net.ipv4.conf.all.rp_filter = 0
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
 net.ipv4.tcp_fin_timeout = 10
-
-# 默认情况下一个 TCP 连接关闭后, 把这个连接曾经有的参数保存到dst_entry中
-# 只要 dst_entry 没有失效, 下次新建立相同连接的时候就可以使用保存的参数来初始化这个连接.
-# 通常情况下是关闭的, 高并发配置为 1.
-net.ipv4.tcp_no_metrics_save = 1
 # unix socket 最大队列
 net.unix.max_dgram_qlen = 1024
 # 路由缓存刷新频率
@@ -241,7 +236,7 @@ net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
-net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_mtu_probing = 0
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
 net.ipv4.tcp_no_metrics_save = 1
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
@@ -325,7 +320,7 @@ fs.inotify.max_user_instances = 524288
 fs.inotify.max_user_watches = 524288
 # fs.nr_open = 1024000
 # 内核响应魔术键
-kernel.sysrq = 1
+kernel.sysrq = 0
 # 优化 CPU 设置
 kernel.sched_autogroup_enabled = 0
 # 禁用 NUMA balancing
