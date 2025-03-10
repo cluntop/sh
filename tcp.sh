@@ -209,8 +209,8 @@ net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
-net.ipv4.tcp_syn_retries = 3
-net.ipv4.tcp_synack_retries = 3
+net.ipv4.tcp_syn_retries = 1
+net.ipv4.tcp_synack_retries = 1
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 5
@@ -397,6 +397,14 @@ net.ipv4.tcp_thin_linear_timeouts = 1
 # 默认值：10
 # 作用：UDP队列里数据报的最大个数
 net.unix.max_dgram_qlen = 10000
+
+# kernel
+
+# 作用：内核的随机地址保护模式
+kernel.randomize_va_space = 1
+
+# 文件描述符的最大值
+fs.aio-max-nr = 1048576
 
 EOF
 
