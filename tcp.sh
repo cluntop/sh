@@ -140,7 +140,7 @@ net.core.default_qdisc=cake
 # net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
-net.ipv4.tcp_timestamps = 0
+net.ipv4.tcp_timestamps = 1
 # ------ END 网络调优: 基本 ------
 
 # ------ 网络调优: 内核 Backlog 队列和缓存相关 ------
@@ -166,7 +166,7 @@ net.ipv4.ip_local_port_range = 1024 65535
 # 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
 net.core.netdev_max_backlog = 250000
 net.ipv4.tcp_max_syn_backlog = 65535
-net.core.somaxconn = 1024000
+net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -200,7 +200,7 @@ net.ipv4.tcp_max_tw_buckets = 16384
 # ------ 网络调优: 其他 ------
 # 启用选择应答
 # 对于广域网通信应当启用
-net.ipv4.tcp_sack = 0
+net.ipv4.tcp_sack = 1
 # 启用转发应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
@@ -257,7 +257,7 @@ net.ipv4.udp_wmem_min = 16384
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 7200
+net.ipv4.tcp_keepalive_time = 1200
 # 最大失败次数, 超过此值后将通知应用层连接失效
 net.ipv4.tcp_keepalive_probes = 3
 # 缩短 tcp keepalive 发送探测包的时间间隔
