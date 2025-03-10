@@ -174,7 +174,7 @@ net.core.netdev_budget = 50000
 net.core.netdev_budget_usecs = 5000
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
-net.ipv4.tcp_window_scaling = 0
+net.ipv4.tcp_window_scaling = 1
 # TCP 拥塞窗口会在一个 RTO 时间
 net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
