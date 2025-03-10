@@ -148,11 +148,13 @@ net.ipv4.tcp_timestamps = 1
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
+vm.max_map_count = 65535000
+
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 4194304
+net.core.rmem_default = 8388608
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 4194304
+net.core.wmem_default = 8388608
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 8388608
