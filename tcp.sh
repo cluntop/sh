@@ -384,6 +384,20 @@ net.ipv4.neigh.default.retrans_time_ms = 280
 # Linux内核中用于配置接收数据包导向（Receive Packet Steering，RPS）和接收流导向（Receive Flow Steering，RFS）功能
 # net.core.rps_sock_flow_entries = 10000
 
+# tcp stream相关设置
+
+# 默认值：0
+# 作用：收到dupACK时要去检查tcp stream是不是 thin ( less than 4 packets in flight)
+net.ipv4.tcp_thin_dupack = 1
+
+# 默认值：0
+# 作用：重传超时后要去检查tcp stream是不是 thin ( less than 4 packets in flight)
+net.ipv4.tcp_thin_linear_timeouts = 1
+
+# 默认值：10
+# 作用：UDP队列里数据报的最大个数
+net.unix.max_dgram_qlen = 10000
+
 EOF
 
 file_sysctl="/etc/sysctl.d/99-sysctl.conf"
