@@ -1,9 +1,10 @@
 #!/bin/bash
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
+# curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.3"
-version_test="121"
+version="1.0.4"
+version_test="122"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -20,13 +21,13 @@ cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 # 获取系统内存大小（以 MB 为单位）
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-tcp_low=$(echo "$size_mb * 5120 / 25.6" | bc)
-tcp_mid=$(echo "$size_mb * 10240 / 25.6" | bc)
-tcp_high=$(echo "$size_mb * 20480 / 25.6" | bc)
+tcp_low=$(echo "$size_mb * 5120 / 25" | bc)
+tcp_mid=$(echo "$size_mb * 10240 / 25" | bc)
+tcp_high=$(echo "$size_mb * 20480 / 25" | bc)
 
-udp_low=$(echo "$size_mb * 4096 / 15.6" | bc)
-udp_mid=$(echo "$size_mb * 8196 / 15.6" | bc)
-udp_high=$(echo "$size_mb * 12288 / 15.6" | bc)
+udp_low=$(echo "$size_mb * 4096 / 15" | bc)
+udp_mid=$(echo "$size_mb * 8196 / 15" | bc)
+udp_high=$(echo "$size_mb * 12288 / 15" | bc)
 
 conntrack_max=$(echo "$size_mb * 300 / 2" | bc)
 
@@ -87,13 +88,6 @@ else
     echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive
 fi
 
-if grep -q 'DefaultLimitNOFILE=65536' /etc/systemd/system.conf; then
-    echo "DefaultLimitNOFILE Existence ok."
-else
-    sed -i '/^DefaultLimitNOFILE=/d' /etc/systemd/system.conf
-    echo "DefaultLimitNOFILE=65536" >> /etc/systemd/system.conf
-fi
-
 if grep -q 'pam_limits.so' /etc/pam.d/common-session; then
     echo "common-session Existence ok."
 else
@@ -119,6 +113,9 @@ sysctl_p() {
 sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
 }
+Install_bbr() {
+wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" && chmod +x tcpx.sh && ./tcpx.sh
+}
 
 kejilion_sh() {
 curl -s -O https://gh.clun.top/raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
@@ -143,37 +140,36 @@ net.core.default_qdisc=cake
 net.ipv4.tcp_timestamps = 1
 # ------ END 网络调优: 基本 ------
 
-# ------ 网络调优: 内核 Backlog 队列和缓存相关 ------
-
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
-vm.max_map_count = 65535000
+vm.max_map_count = 262144
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 8388608
+net.core.rmem_default = 18388608
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 8388608
+net.core.wmem_default = 18388608
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
-net.core.optmem_max = 8388608
+net.core.optmem_max = 25165824
 # 缓冲区相关配置均和内存相关 # 6291456
 net.ipv4.tcp_rmem = 65534 37500000 536870912
 net.ipv4.tcp_wmem = 65534 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
-net.ipv4.tcp_collapse_max_bytes = 8388608
+# net.ipv4.tcp_collapse_max_bytes = 8388608
+net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
-# 每个网络接口接收数据包的速率比内核处理这些包的速率快时，允许送到队列的数据包的最大数目。
-net.core.netdev_max_backlog = 250000
-net.ipv4.tcp_max_syn_backlog = 65535
+# 
+net.ipv4.tcp_max_syn_backlog = 3240000
+net.core.netdev_max_backlog = 2621244
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
-net.core.netdev_budget = 50000
-net.core.netdev_budget_usecs = 5000
+net.core.netdev_budget = 10000
+net.core.netdev_budget_usecs = 2000
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
 net.ipv4.tcp_window_scaling = 1
@@ -185,11 +181,9 @@ net.netfilter.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_buckets = 555000
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_close_wait = 15
-net.netfilter.nf_conntrack_tcp_timeout_established = 180
+net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
+net.netfilter.nf_conntrack_tcp_timeout_established = 3600
 # TIME-WAIT 状态调优
-# Ref: http://vincent.bernat.im/en/blog/2014-tcp-time-wait-state-linux.html
-# Ref: https://www.cnblogs.com/lulu/p/4149312.html
 # 4.12 内核中此参数已经永久废弃, 不用纠结是否需要开启
 # net.ipv4.tcp_tw_recycle = 0
 ## 只对客户端生效, 服务器连接上游时也认为是客户端
@@ -197,9 +191,6 @@ net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
 net.ipv4.tcp_max_tw_buckets = 16384
-# ------ END 网络调优: 内核 Backlog 队列和缓存相关 ------
-
-# ------ 网络调优: 其他 ------
 # 启用选择应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_sack = 1
@@ -211,8 +202,8 @@ net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
-net.ipv4.tcp_syn_retries = 1
-net.ipv4.tcp_synack_retries = 1
+net.ipv4.tcp_syn_retries = 2
+net.ipv4.tcp_synack_retries = 2
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 5
@@ -228,9 +219,9 @@ net.ipv4.conf.all.rp_filter = 0
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 10
+net.ipv4.tcp_fin_timeout = 15
 # unix socket 最大队列
-net.unix.max_dgram_qlen = 1024
+net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
 net.ipv4.route.gc_timeout = 100
 # 它用于控制是否忽略所有的ICMP Echo请求。
@@ -259,23 +250,17 @@ net.ipv4.udp_wmem_min = 16384
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 1200
+net.ipv4.tcp_keepalive_time = 600
 # 最大失败次数, 超过此值后将通知应用层连接失效
 net.ipv4.tcp_keepalive_probes = 3
 # 缩短 tcp keepalive 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl = 15
+net.ipv4.tcp_keepalive_intvl = 30
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
 # 系统中最多有多少个 TCP 套接字不被关联到任何一个用户文件句柄上
-net.ipv4.tcp_max_orphans = 65536
+net.ipv4.tcp_max_orphans = 1048576
 # arp_table的缓存限制优化
-net.ipv4.neigh.default.gc_thresh1 = 512
-net.ipv4.neigh.default.gc_thresh2 = 2048
-net.ipv4.neigh.default.gc_thresh3 = 4096
-net.ipv6.neigh.default.gc_thresh3 = 4096
-net.ipv6.neigh.default.gc_thresh2 = 2048
-net.ipv6.neigh.default.gc_thresh1 = 512
 net.ipv4.neigh.default.gc_stale_time = 120
 net.ipv6.neigh.default.gc_stale_time = 120
 net.ipv4.conf.default.arp_announce = 2
@@ -284,25 +269,10 @@ net.ipv4.conf.lo.arp_announce = 2
 # 用于控制系统在响应 ARP 请求时的行为。
 net.ipv4.conf.all.arp_ignore = 1
 net.ipv4.conf.default.arp_ignore = 1
-# ------ END 网络调优: 其他 ------
-
-# ------ 内核调优 ------
-
-# Ref: Aliyun, etc
-# 内核 Panic 后 1 秒自动重启
-# kernel.panic = 1
-# 允许更多的PIDs, 减少滚动翻转问题
-# kernel.pid_max = 65535
-# 内核所允许的最大共享内存段的大小（bytes）
-# kernel.shmmax = 4294967296
-# 在任何给定时刻, 系统上可以使用的共享内存的总量（pages）
-# kernel.shmall = 1073741824
 # 取消注释以下内容以停止控制台上的低级消息
 kernel.printk = 3 4 1 3
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
-# 当发生oom时, 自动转换为panic
-# vm.panic_on_oom = 0
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
 vm.dirty_background_ratio = 2
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
@@ -371,42 +341,34 @@ net.ipv6.conf.eth0.accept_ra = 2
 # net.ipv6.conf.lo.disable_ipv6 = 1
 
 # 控制未解析（unresolved）的邻居（neighbor）项队列长度。
-net.ipv4.neigh.default.unres_qlen = 1000
-net.ipv4.neigh.default.unres_qlen_bytes = 16777216
-
+net.ipv4.neigh.default.unres_qlen = 10
+net.ipv4.neigh.default.unres_qlen_bytes = 131072
 #ARP缓存的过期时间（单位毫秒）
 net.ipv4.neigh.default.base_reachable_time_ms = 60000
-
 #在把记录标记为不可达之前，用多播/广播方式解析地址的最大次数
-net.ipv4.neigh.default.mcast_solicit = 20
-
+net.ipv4.neigh.default.mcast_solicit = 10
 # 重发一个ARP请求前等待毫秒数
-net.ipv4.neigh.default.retrans_time_ms = 280
+net.ipv4.neigh.default.retrans_time_ms = 2000
 
-# Linux内核中用于配置接收数据包导向（Receive Packet Steering，RPS）和接收流导向（Receive Flow Steering，RFS）功能
-# net.core.rps_sock_flow_entries = 10000
-
-# tcp stream相关设置
-
-# 默认值：0
-# 作用：收到dupACK时要去检查tcp stream是不是 thin ( less than 4 packets in flight)
+# 作用：收到dupACK时要去检查tcp stream
 net.ipv4.tcp_thin_dupack = 1
-
-# 默认值：0
-# 作用：重传超时后要去检查tcp stream是不是 thin ( less than 4 packets in flight)
+# 作用：重传超时后要去检查tcp stream
 net.ipv4.tcp_thin_linear_timeouts = 1
-
-# 默认值：10
 # 作用：UDP队列里数据报的最大个数
 net.unix.max_dgram_qlen = 10000
 
-# kernel
-
 # 作用：内核的随机地址保护模式
 kernel.randomize_va_space = 1
+# Linux 内核中用于控制系统信号量（Semaphore）的参数。
+kernel.sem = 10000 2560000 10000 2048
 
 # 文件描述符的最大值
 fs.aio-max-nr = 1048576
+
+kernel.msgmni = 65535
+kernel.msgmax = 65536
+# 修改消息队列长度
+kernel.msgmnb = 65536
 
 EOF
 
@@ -441,6 +403,8 @@ while true; do
     echo "5. 优化TCP 6. 优化UDP"
     echo "---"
     echo "7. 清理垃圾 8. 命令参考"
+    echo "9. 安装内核"
+    echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
 
@@ -455,6 +419,8 @@ while true; do
       6) calculate_udp ; sysctl_p ; clun_tcp ;;
       7) cleaning_trash ;;
       8) tcp_info ;;
+      9) Install_bbr ;;
+      000) kejilion_sh ;;
       00) update_script ;;
       0) clear ; exit ;;
       *) echo "无效的输入!" ;;
@@ -469,18 +435,18 @@ case $1 in
       # 设置定时任务字符串
       cron_clun="0 * * * * curl -sL clun.top | bash -s -- sysctl"
       # 检查是否存在相同的定时任务
-      clun_cron=$(crontab -l 2>/dev/null | grep -Fq "$cron_clun")
+      clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
       # 如果不存在，则添加定时任务
       if [ -z "$clun_cron" ]; then
-        crontab -l 2>/dev/null; echo "$cron_clun" | crontab -
+        (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
         echo "优化内核任务已添加"
       else
         crontab -l 2>/dev/null | grep -Fv "$cron_clun" | crontab -
         echo "优化内核任务已删除"
       fi
-      ;;
+    ;;
     "sysctl") Install_sysctl ;;
-	"top") Install_sysctl ;;
+    "tcp") Install_sysctl ;;
     *) sleep 1 && clun_tcp ;;
 esac
 
