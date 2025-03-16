@@ -159,7 +159,7 @@ net.ipv4.tcp_wmem = 65534 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
-net.ipv4.tcp_notsent_lowat = 262144
+net.ipv4.tcp_notsent_lowat = 65536
 net.ipv4.ip_local_port_range = 1024 65535
 # 
 net.ipv4.tcp_max_syn_backlog = 3240000
