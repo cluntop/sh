@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.0.4"
-version_test="124"
+version_test="125"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -154,16 +154,18 @@ net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 25165824
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 65534 37500000 536870912
-net.ipv4.tcp_wmem = 65534 37500000 536870912
+net.ipv4.tcp_rmem = 16384 37500000 536870912
+net.ipv4.tcp_wmem = 32768 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 10485760
 net.ipv4.ip_local_port_range = 1024 65535
-# 
-net.ipv4.tcp_max_syn_backlog = 3240000
-net.core.netdev_max_backlog = 2621244
+# 半连接队列大小（SYN 队列）
+net.ipv4.tcp_max_syn_backlog = 65535
+# 网卡接收队列大小（所有协议数据包）
+net.core.netdev_max_backlog = 500000
+# 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
@@ -202,8 +204,8 @@ net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
-net.ipv4.tcp_syn_retries = 2
-net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 8
+net.ipv4.tcp_synack_retries = 5
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 5
@@ -219,7 +221,7 @@ net.ipv4.conf.all.rp_filter = 0
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_fin_timeout = 30
 # unix socket 最大队列
 net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
@@ -250,7 +252,7 @@ net.ipv4.udp_wmem_min = 16384
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 600
+net.ipv4.tcp_keepalive_time = 120
 # 最大失败次数, 超过此值后将通知应用层连接失效
 net.ipv4.tcp_keepalive_probes = 3
 # 缩短 tcp keepalive 发送探测包的时间间隔
@@ -274,19 +276,19 @@ kernel.printk = 3 4 1 3
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
-vm.dirty_background_ratio = 2
+vm.dirty_background_ratio = 5
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
 vm.min_free_kbytes = 0
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
-# vm.vfs_cache_pressure = 50
+# vm.vfs_cache_pressure = 80
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
-vm.swappiness = 5
+vm.swappiness = 10
 # 仅用10%做为系统cache
-vm.dirty_ratio = 5
+vm.dirty_ratio = 10
 vm.overcommit_memory = 1
 # 增加系统文件描述符限制
 # Fix error: too many open files
-# fs.file-max = 1024000
+# fs.file-max = 2048000
 fs.inotify.max_user_instances = 524288
 # 设置 inotify 监视的最大用户监视器数量。
 fs.inotify.max_user_watches = 524288
@@ -300,8 +302,8 @@ kernel.numa_balancing = 0
 # IPv4 TCP 低延迟参数
 net.ipv4.tcp_low_latency = 0
 
-# 当某个节点可用内存不足时, 系统会倾向于从其他节点分配内存. 对 Mongo/Redis 类 cache 服务器友好
-vm.zone_reclaim_mode = 3
+# 内存区域（Zone）回收策略
+vm.zone_reclaim_mode = 0
 
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
