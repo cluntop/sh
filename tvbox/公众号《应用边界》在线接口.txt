@@ -1,0 +1,8 @@
+应用多多最新在线接口：
+
+1.多仓接口： https://bitbucket.org/xduo/cool/raw/main/room.json
+2.多线路接口： https://bitbucket.org/xduo/cool/raw/main/line.json
+
+说明：
+1.以上并不是单线路，不要将此用于单线路软件上！否则会提示失败！
+2.接口收集自互联网，本人只负责整理汇总，不存储任何站源内容，无盈利，如有侵权或者损害到您的权益，请联系删除
