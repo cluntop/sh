@@ -154,8 +154,8 @@ net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 25165824
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 16384 37500000 536870912
-net.ipv4.tcp_wmem = 32768 37500000 536870912
+net.ipv4.tcp_rmem = 8192 37500000 536870912
+net.ipv4.tcp_wmem = 4096 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
