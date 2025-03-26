@@ -15,6 +15,12 @@
             "type": 0,
             "url": "./lives/Tianmu.txt",
             "epg": "https://epg.v1.mk/json?ch={name}&date={date}"
+        },
+        {
+            "name": "fanmingming",
+            "type": 0,
+            "url": "./lives/fanmingming.txt",
+            "epg": ""
         }
     ],
     "sites": [
@@ -25,7 +31,7 @@
             "api": "csp_LocalFile",
             "searchable": 0,
             "quickSearch": 0,
-            "filterable": 0,
+            "filterable": 1,
             "type_flag": 0
         },
         {
@@ -80,7 +86,7 @@
             "api": "csp_XYQHikerAL",
             "searchable": 1,
             "quickSearch": 1,
-            "filterable": 1,
+            "filterable": 0,
             "ext": "./json/云盘资源.json"
         },
         {
@@ -112,6 +118,24 @@
             "quickSearch": 1,
             "filterable": 1,
             "ext": "https://www.xb6v.com"
+        },
+        {
+            "key": "csp_DyGod",
+            "name": "🧲电影天堂",
+            "type": 3,
+            "api": "csp_DyGod",
+            "searchable": 1,
+            "quickSearch": 1,
+            "filterable": 1
+        },
+        {
+            "key": "csp_QnMp4",
+            "name": "🧲七妹",
+            "type": 3,
+            "api": "csp_QnMp4",
+            "searchable": 1,
+            "quickSearch": 1,
+            "filterable": 1
         },
         {
             "key": "csp_SeedHub",
@@ -400,14 +424,15 @@
             "ext": "./json/农民影视.json"
         },
         {
-            "key": "csp_XYQHiker_七新影视",
-            "name": "🌟七新影视(XYQH)",
+            "key": "csp_XYQHiker_剧圈圈",
+            "name": "🌟剧圈圈(XYQH)",
             "type": 3,
             "api": "csp_XYQHiker",
             "searchable": 1,
             "quickSearch": 1,
             "filterable": 1,
-            "ext": "./json/七新影视.json"
+            "ext": "./json/剧圈圈.json",
+            "click": "document.getElementById('playleft').children[0].contentWindow.document.getElementById('start').click()"
         },
         {
             "key": "csp_XYQHiker_骚火电影VIP",
@@ -468,16 +493,6 @@
             "quickSearch": 1,
             "filterable": 1,
             "ext": "./json/看一看影视.json"
-        },
-        {
-            "key": "csp_XYQHiker_九八局",
-            "name": "🍷九八剧(XYQH)",
-            "type": 3,
-            "api": "csp_XYQHiker",
-            "searchable": 1,
-            "quickSearch": 1,
-            "filterable": 1,
-            "ext": "./json/九八剧.json"
         },
         {
             "key": "csp_XYQHiker_八号影视",
@@ -553,7 +568,7 @@
             "ext": "./js/虎牙直播.js",
             "searchable": 0,
             "quickSearch": 0,
-            "filterable": 0
+            "filterable": 1
         },
         {
             "key": "csp_XYQHiker_虎牙直播",
@@ -562,7 +577,7 @@
             "api": "csp_XYQHiker",
             "searchable": 1,
             "quickSearch": 0,
-            "filterable": 0,
+            "filterable": 1,
             "ext": "./json/虎牙直播.json"
         },
         {
@@ -572,7 +587,7 @@
             "api": "csp_XYQHiker",
             "searchable": 1,
             "quickSearch": 0,
-            "filterable": 0,
+            "filterable": 1,
             "ext": "./json/斗鱼直播.json"
         }
     ],
@@ -581,6 +596,16 @@
             "name": "Web聚合",
             "type": 3,
             "url": "Web"
+        },
+        {
+            "name": "-咸鱼-",
+            "type": 0,
+            "url": "https://jx.xymp4.cc/?url=",
+            "ext": {
+                "header": {
+                    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.3124.68"
+                }
+            }
         },
         {
             "name": "-虾米-",
@@ -593,40 +618,19 @@
             }
         },
         {
-            "name": "-极速-",
+            "name": "-淘片-",
             "type": 0,
-            "url": "https://jx.2s0.cn/player/?url=",
+            "url": "https://jx.yparse.com/index.php?url=",
             "ext": {
-                "flag": [
-                    "qq",
-                    "腾讯",
-                    "qiyi",
-                    "爱奇艺",
-                    "奇艺",
-                    "youku",
-                    "优酷",
-                    "mgtv",
-                    "芒果",
-                    "letv",
-                    "乐视",
-                    "pptv",
-                    "PPTV",
-                    "sohu",
-                    "bilibili",
-                    "哔哩哔哩",
-                    "哔哩"
-                ],
-                "ext": {
-                    "header": {
-                        "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
-                    }
+                "header": {
+                    "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
                 }
             }
         },
         {
-            "name": "-云解析-",
+            "name": "-冰豆-",
             "type": 0,
-            "url": "https://jx.yparse.com/index.php?url=",
+            "url": "https://bd.jx.cn/?url=",
             "ext": {
                 "header": {
                     "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
@@ -637,26 +641,6 @@
             "name": "-77解析-",
             "type": 0,
             "url": "https://jx.77flv.cc/?url=",
-            "ext": {
-                "header": {
-                    "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
-                }
-            }
-        },
-        {
-            "name": "-hls-",
-            "type": 0,
-            "url": "https://jx.hls.one/?url=",
-            "ext": {
-                "header": {
-                    "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
-                }
-            }
-        },
-        {
-            "name": "-qm解析-",
-            "type": 0,
-            "url": "http://jiexi44.qmbo.cn/jiexi/?url=",
             "ext": {
                 "header": {
                     "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
@@ -676,7 +660,7 @@
         {
             "name": "-盘古-",
             "type": 0,
-            "url": "https://py.987654321.icu/.%60/playm3u8.php?url=",
+            "url": "https://www.playm3u8.cn/jiexi.php?url=",
             "ext": {
                 "header": {
                     "user-agent": "Mozilla/5.0 (Linux; Android 13; V2049A Build/TP1A.220624.014; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/116.0.0.0 Mobile Safari/537.36"
@@ -832,6 +816,15 @@
             "regex": [
                 "16.63",
                 "17.66"
+            ]
+        },
+        {
+            "name": "ikun",
+            "hosts": [
+                "bfikuncdn"
+            ],
+            "regex": [
+                "#EXTINF.*?\\s+.*?XR8pDxQk.*?\\.ts"
             ]
         },
         {
