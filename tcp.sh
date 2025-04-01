@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.4"
-version_test="128"
+version="1.0.5"
+version_test="129"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -330,12 +330,12 @@ net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 
 # 设置控制所有网络接口上 IPv6 地址的自动配置
-net.ipv6.conf.all.autoconf = 1
-net.ipv6.conf.eth0.autoconf = 1
+# net.ipv6.conf.all.autoconf = 1
+# net.ipv6.conf.eth0.autoconf = 1
 
 # 控制所有接口是否接受路由器通告（Router Advertisements, RA）
-net.ipv6.conf.all.accept_ra = 2
-net.ipv6.conf.eth0.accept_ra = 2
+# net.ipv6.conf.all.accept_ra = 2
+# net.ipv6.conf.eth0.accept_ra = 2
 
 # 1 = IPv4 优先 / 0 = 6 优先
 # net.ipv6.conf.all.disable_ipv6 = 1
