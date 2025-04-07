@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.5"
-version_test="130"
+version="1.0.6"
+version_test="131"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -146,25 +146,25 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 vm.max_map_count = 262144
 
 # 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 18388608
+net.core.rmem_default = 262144
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 18388608
+net.core.wmem_default = 262144
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
-net.core.optmem_max = 25165824
+net.core.optmem_max = 10000000
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 4194304 37500000 536870912
-net.ipv4.tcp_wmem = 4194304 37500000 536870912
+net.ipv4.tcp_rmem = 32768 37500000 536870912
+net.ipv4.tcp_wmem = 32768 37500000 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
-net.ipv4.tcp_notsent_lowat = 10485760
+net.ipv4.tcp_notsent_lowat = 524288
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.tcp_max_syn_backlog = 655350
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 500000
+net.core.netdev_max_backlog = 100000
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
@@ -192,7 +192,7 @@ net.netfilter.nf_conntrack_tcp_timeout_established = 3600
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 16384
+net.ipv4.tcp_max_tw_buckets = 32768
 # 启用选择应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_sack = 1
@@ -204,8 +204,8 @@ net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
-net.ipv4.tcp_syn_retries = 8
-net.ipv4.tcp_synack_retries = 5
+net.ipv4.tcp_syn_retries = 2
+net.ipv4.tcp_synack_retries = 2
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 5
@@ -216,12 +216,12 @@ net.ipv4.tcp_syncookies = 0
 
 # 开启反向路径过滤
 # Aliyun 负载均衡实例后端的 ECS 需要设置为 0
-net.ipv4.conf.default.rp_filter = 0
-net.ipv4.conf.all.rp_filter = 0
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.rp_filter = 1
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_fin_timeout = 10
 # unix socket 最大队列
 net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
@@ -231,7 +231,7 @@ net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
-net.ipv4.tcp_mtu_probing = 0
+net.ipv4.tcp_mtu_probing = 1
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
 net.ipv4.tcp_no_metrics_save = 1
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
@@ -261,13 +261,13 @@ net.ipv4.tcp_keepalive_intvl = 30
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
 # 系统中最多有多少个 TCP 套接字不被关联到任何一个用户文件句柄上
-net.ipv4.tcp_max_orphans = 1048576
+net.ipv4.tcp_max_orphans = 100000
 # arp_table的缓存限制优化
 net.ipv4.neigh.default.gc_stale_time = 120
 net.ipv6.neigh.default.gc_stale_time = 120
 net.ipv4.conf.default.arp_announce = 2
 net.ipv4.conf.all.arp_announce = 2
-net.ipv4.conf.lo.arp_announce = 2
+# net.ipv4.conf.lo.arp_announce = 2
 # 用于控制系统在响应 ARP 请求时的行为。
 net.ipv4.conf.all.arp_ignore = 1
 net.ipv4.conf.default.arp_ignore = 1
@@ -276,15 +276,15 @@ kernel.printk = 3 4 1 3
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
-vm.dirty_background_ratio = 5
+vm.dirty_background_ratio = 2
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
 vm.min_free_kbytes = 0
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 80
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
-vm.swappiness = 10
+vm.swappiness = 5
 # 仅用10%做为系统cache
-vm.dirty_ratio = 10
+vm.dirty_ratio = 5
 vm.overcommit_memory = 1
 # 增加系统文件描述符限制
 # Fix error: too many open files
