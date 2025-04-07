@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.6"
-version_test="132"
+version="1.0.7"
+version_test="133"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -212,12 +212,12 @@ net.ipv4.tcp_retries1 = 5
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
 net.ipv4.tcp_retries2 = 8
 # 开启 SYN 洪水攻击保护
-net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_syncookies = 0
 
 # 开启反向路径过滤
 # Aliyun 负载均衡实例后端的 ECS 需要设置为 0
-net.ipv4.conf.default.rp_filter = 1
-net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.default.rp_filter = 2
+net.ipv4.conf.all.rp_filter = 2
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
@@ -320,10 +320,10 @@ net.ipv4.tcp_tso_win_divisor = 3
 # 控制 TCP 协议在处理 TIME-WAIT 状态时的行为
 net.ipv4.tcp_rfc1337 = 0
 # 包转发. 出于安全考虑, Linux 系统默认禁止数据包转发
-net.ipv4.ip_forward = 1
-net.ipv4.conf.all.forwarding = 1
-net.ipv4.conf.default.forwarding = 1
-net.ipv4.conf.all.route_localnet = 1
+# net.ipv4.ip_forward = 1
+# net.ipv4.conf.all.forwarding = 1
+# net.ipv4.conf.default.forwarding = 1
+# net.ipv4.conf.all.route_localnet = 1
 # 取消对广播 ICMP 包的回应
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 # 开启恶意 ICMP 错误消息保护
@@ -357,12 +357,12 @@ net.ipv4.tcp_thin_dupack = 1
 # 作用：重传超时后要去检查tcp stream
 net.ipv4.tcp_thin_linear_timeouts = 1
 # 作用：UDP队列里数据报的最大个数
-net.unix.max_dgram_qlen = 10000
+net.unix.max_dgram_qlen = 100
 
 # 作用：内核的随机地址保护模式
 kernel.randomize_va_space = 1
 # Linux 内核中用于控制系统信号量（Semaphore）的参数。
-kernel.sem = 10000 2560000 10000 2048
+kernel.sem = 512 32000 100 256
 
 # 文件描述符的最大值
 fs.aio-max-nr = 1048576
