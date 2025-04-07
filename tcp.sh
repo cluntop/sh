@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.0.6"
-version_test="131"
+version_test="132"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -212,7 +212,7 @@ net.ipv4.tcp_retries1 = 5
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
 net.ipv4.tcp_retries2 = 8
 # 开启 SYN 洪水攻击保护
-net.ipv4.tcp_syncookies = 0
+net.ipv4.tcp_syncookies = 1
 
 # 开启反向路径过滤
 # Aliyun 负载均衡实例后端的 ECS 需要设置为 0
