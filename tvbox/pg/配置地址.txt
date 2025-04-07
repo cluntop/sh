@@ -1,1 +1,1 @@
-clan://localhost/tvbox/pg/pg.json
+clan://localhost/tvbox/pg/jsm.json

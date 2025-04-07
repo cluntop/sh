@@ -84,6 +84,15 @@
       }
     },
     {
+      "key": "游戏 | 直播",
+      "name": "游戏 | 直播",
+      "type": 3,
+      "api": "csp_Living",
+      "searchable": 1,
+      "changeable": 0,
+      "ext":"http://127.0.0.1:9966/api/proxy/https://lemonlive.pages.dev"
+    },
+    {
       "key": "玩偶 | 多多",
       "name": "玩偶 | 多多",
       "type": 3,
@@ -398,7 +407,7 @@
       "key": "非凡",
       "name": "非凡",
       "type": 1,
-      "api": "http://api.ffzyapi.com/api.php/provide/vod/",
+      "api": "http://cj.ffzyapi.com/api.php/provide/vod/",
       "searchable": 1,
       "changeable": 1,
       "categories": [
@@ -432,6 +441,15 @@
         "港台动漫",
         "海外动漫"
       ]
+    },
+    {
+      "key": "豆瓣采集资源",
+      "name": "豆瓣 | 采集",
+      "type": 1,
+      "api": "https://caiji.dbzy.tv/api.php/provide/vod/from/dbm3u8/at/josn/",
+      "playerType": 1,
+      "searchable": 1,
+      "changeable": 1
     },
     {
       "key": "量子",
@@ -502,5 +520,5 @@
         ".*ulivetv.*"
       ]
     }
-    ]
+  ]
 }

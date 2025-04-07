@@ -1,1 +1,7 @@
-https://ghfast.top/raw.githubusercontent.com/fanmingming/live/refs/heads/main/tv/m3u/ipv6.m3u
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/drpy2.min.js
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/酷奇MV.js
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/MTV.json
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/drpy2.js
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/斗鱼直播.js
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/有声小说吧.js
+https://raw.gitmirror.com/fantaiying7/EXT/refs/heads/main/%E5%85%94%E5%B0%8F%E8%B4%9D.js

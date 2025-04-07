@@ -5,7 +5,7 @@
       "name": "🚀①网盘线路"
     },
     {
-      "url": "clan://localhost/tvbox/pg/pg.json",
+      "url": "clan://localhost/tvbox/pg/jsm.json",
       "name": "🚀②PG线路"
     },		
     {
@@ -17,7 +17,7 @@
       "name": "🚀④饭太硬线路"
     }, 
     {
-      "url": "clan://localhost/tvbox/xiaosa/xiaosa.json",
+      "url": "clan://localhost/tvbox/xiaosa/api.json",
       "name": "🚀⑤潇洒线路"
     },
     {
@@ -29,8 +29,8 @@
       "name": "🚀⑦OK线路"
     },		
     {
-      "url": "clan://localhost/tvbox/lanren/lanren.json",
-      "name": "🚀⑧懒人线路"
+      "url": "clan://localhost/tvbox/wangerxiao/wangerxiao.json",
+      "name": "🚀⑧放牛线路"
     },
      {
       "url": "clan://localhost/tvbox/Dlao/Dlao.json",
@@ -41,8 +41,8 @@
       "name": "🚀⑩南风线路"
     }, 	
     {
-      "url": "clan://localhost/tvbox/miaoyingshi/miaoyingshi.json",
-      "name": "🚀⑪喵影视线路"
+      "url": "clan://localhost/tvbox/moyu/moyu.json",
+      "name": "🚀⑪摸鱼线路"
     },
     {
       "url": "clan://localhost/tvbox/xiangyaqing/xiangyaqing.json",

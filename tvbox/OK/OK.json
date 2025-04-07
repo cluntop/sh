@@ -1,11 +1,11 @@
 {
-  "spider": "./9WynNuH2.png;md5;4e011372ab02ff26c3eba4986e3a271b",
+  "spider": "./FPFRsQX0.png;md5;46554623e21e0f397e173be8aa3df079",
   "wallpaper": "http://127.0.0.1:9978/proxy?do=wall",
   "logo": "./lib/ol.txt",
   "sites": [
     {
       "key": "豆瓣",
-      "name": "🤓豆瓣┃OK线路",
+      "name": "🤓公众号┃OK杰克",
       "type": 3,
       "api": "csp_DoubanGuard",
       "searchable": 0,
@@ -23,6 +23,19 @@
         "type": "rect",
         "ratio": 1.43
       }
+    },
+    {
+      "key": "本地播放",
+      "name": "🐼本地┃播放",
+      "type": 3,
+      "api": "csp_LocalGuard",
+      "searchable": 0,
+      "changeable": 0,
+      "indexs": 0,
+      "style": {
+        "type": "list"
+      },
+      "timeout": 5
     },
     {
       "key": "玩偶",
@@ -45,6 +58,22 @@
       "name": "💮小章┃4K",
       "type": 3,
       "api": "csp_XiaoZhangGuard",
+      "searchable": 1,
+      "filterable": 1,
+      "changeable": 1,
+      "ext": {
+        "token": "file://TV/ali_token.txt",
+        "cookie": "file://TV/quark_cookie.txt",
+        "uc_cookie": "file://TV/uc_cookie.txt",
+        "123_token": "file://TV/123_token.txt"
+      },
+      "timeout": 30
+    },
+    {
+      "key": "光影",
+      "name": "🎥光影┃4K",
+      "type": 3,
+      "api": "csp_GuanyingGuard",
       "searchable": 1,
       "filterable": 1,
       "changeable": 1,
@@ -113,26 +142,6 @@
       "timeout": 10
     },
     {
-      "key": "追剧仔",
-      "name": "😉追剧┃App",
-      "type": 3,
-      "api": "csp_ZjzGuard",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1,
-      "timeout": 10
-    },
-    {
-      "key": "现代",
-      "name": "🤩现代┃App",
-      "type": 3,
-      "api": "csp_XianDaiGuard",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1,
-      "timeout": 10
-    },
-    {
       "key": "浪酷版",
       "name": "👓浪酷┃秒播",
       "type": 3,
@@ -154,16 +163,6 @@
       "quickSearch": 1,
       "filterable": 1,
       "timeout": 20
-    },
-    {
-      "key": "悠悠",
-      "name": "✨️️悠悠┃App",
-      "type": 3,
-      "api": "csp_YouYouGuard",
-      "searchable": 1,
-      "quickSearch": 1,
-      "filterable": 1,
-      "timeout": 10
     },
     {
       "key": "小米",
@@ -263,6 +262,54 @@
       "timeout": 25
     },
     {
+      "key": "挽歌",
+      "name": "🪅挽歌┃4K",
+      "type": 3,
+      "api": "csp_DuoDuoGuard",
+      "quickSearch": 1,
+      "changeable": 1,
+      "filterable": 1,
+      "ext": {
+        "token": "file://TV/ali_token.txt",
+        "cookie": "file://TV/quark_cookie.txt",
+        "uc_cookie": "file://TV/uc_cookie.txt",
+        "123_token": "file://TV/123_token.txt"
+      },
+      "timeout": 25
+    },
+    {
+      "key": "表哥",
+      "name": "👨🏻‍🦱表哥┃4K",
+      "type": 3,
+      "api": "csp_DbgGuard",
+      "quickSearch": 1,
+      "changeable": 1,
+      "filterable": 1,
+      "ext": {
+        "token": "file://TV/ali_token.txt",
+        "cookie": "file://TV/quark_cookie.txt",
+        "uc_cookie": "file://TV/uc_cookie.txt",
+        "123_token": "file://TV/123_token.txt"
+      },
+      "timeout": 25
+    },
+    {
+      "key": "百家",
+      "name": "💒百家┃4K",
+      "type": 3,
+      "api": "csp_BaijiaGuard",
+      "quickSearch": 1,
+      "changeable": 1,
+      "filterable": 1,
+      "ext": {
+        "token": "file://TV/ali_token.txt",
+        "cookie": "file://TV/quark_cookie.txt",
+        "uc_cookie": "file://TV/uc_cookie.txt",
+        "123_token": "file://TV/123_token.txt"
+      },
+      "timeout": 25
+    },
+    {
       "key": "至臻",
       "name": "💌至臻┃4K",
       "type": 3,
@@ -274,6 +321,19 @@
         "token": "file://TV/ali_token.txt",
         "cookie": "file://TV/quark_cookie.txt",
         "uc_cookie": "file://TV/uc_cookie.txt",
+        "123_token": "file://TV/123_token.txt"
+      },
+      "timeout": 25
+    },
+    {
+      "key": "123分享",
+      "name": "🌂123┃4K",
+      "type": 3,
+      "api": "csp_Time123Guard",
+      "quickSearch": 0,
+      "changeable": 0,
+      "filterable": 1,
+      "ext": {
         "123_token": "file://TV/123_token.txt"
       },
       "timeout": 25
@@ -354,6 +414,23 @@
       "indexs": 0,
       "ext": {
         "uc_cookie": "file://TV/uc_cookie.txt"
+      },
+      "style": {
+        "type": "list"
+      },
+      "timeout": 30
+    },
+    {
+      "key": "我的百度",
+      "name": "☘️我的┃百度",
+      "type": 3,
+      "api": "csp_MyBaiduGuard",
+      "searchable": 0,
+      "quickSearch": 0,
+      "filterable": 0,
+      "indexs": 0,
+      "ext": {
+        "baidu_cookie": "file://TV/baidu_cookie.txt"
       },
       "style": {
         "type": "list"
@@ -725,6 +802,19 @@
         "cookie": "file://TV/quark_cookie.txt",
         "uc_cookie": "file://TV/uc_cookie.txt",
         "123_token": "file://TV/123_token.txt"
+      },
+      "timeout": 15
+    },
+    {
+      "key": "双星",
+      "name": "🤩双星┃搜索",
+      "type": 3,
+      "api": "csp_Star2Guard",
+      "searchable": 1,
+      "filterable": 1,
+      "changeable": 0,
+      "ext": {
+        "cookie": "file://TV/quark_cookie.txt"
       },
       "timeout": 15
     },

@@ -5,7 +5,7 @@
       "name": "🚀①网盘线路"
     },
     {
-      "url": "file://tvbox/pg/pg.json",
+      "url": "file://tvbox/pg/jsm.json",
       "name": "🚀②PG线路"
     },		
     {
@@ -17,7 +17,7 @@
       "name": "🚀④饭太硬线路"
     }, 
     {
-      "url": "file://tvbox/xiaosa/xiaosa.json",
+      "url": "file://tvbox/xiaosa/api.json",
       "name": "🚀⑤潇洒线路"
     },
     {
@@ -41,8 +41,8 @@
       "name": "🚀⑩南风线路"
     }, 	
     {
-      "url": "file://tvbox/miaoyingshi/miaoyingshi.json",
-      "name": "🚀⑪喵影视线路"
+      "url": "file://tvbox/moyu/moyu.json",
+      "name": "🚀⑪摸鱼线路"
     },
     {
       "url": "file://tvbox/xiangyaqing/xiangyaqing.json",

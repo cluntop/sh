@@ -1,5 +1,5 @@
 {
-  "spider": "./wex.txt;md5;570931c857d40c1749dd0ebe17da7f62",
+  "spider": "./wex.txt;md5;0f24b3e89558392e4e1267e8e98672ce",
   "wallpaper": "https://牛逼.王二小放牛娃.xyz/",
   "logo": "https://fs-im-kefu.7moor-fs1.com/ly/4d2c3f00-7d4c-11e5-af15-41bf63ae4ea0/1716818643045/wexfnw.gif",
   "sites": [
@@ -50,13 +50,13 @@
       "changeable": 1
     },
     {
-      "key": "Wexwanni",
-      "name": "💓玩你┃4K💓",
+      "key": "WexxzysGuard",
+      "name": "💓校长┃4K💓",
       "type": 3,
-      "api": "csp_WexwanniGuard",
+      "api": "csp_WexxzysGuard",
       "searchable": 1,
       "changeable": 1
-    },	
+    },
     {
       "key": "玩偶",
       "name": "💓‍玩偶┃4K💓‍",
@@ -107,6 +107,14 @@
       "changeable": 1
     },
     {
+      "key": "Wexwanni",
+      "name": "💓玩你┃4K💓",
+      "type": 3,
+      "api": "csp_WexwanniGuard",
+      "searchable": 1,
+      "changeable": 1
+    },
+    {
       "key": "WexshuangzixingGuard",
       "name": "💓双星┃4K💓",
       "type": 3,
@@ -131,18 +139,18 @@
       "changeable": 1
     },
     {
-      "key": "WexxzysGuard",
-      "name": "💓校长┃4K💓",
-      "type": 3,
-      "api": "csp_WexxzysGuard",
-      "searchable": 1,
-      "changeable": 1
-    },
-    {
       "key": "盘他",
       "name": "💓‍盘他┃4K💓‍",
       "type": 3,
       "api": "csp_WexYDpantaGuard",
+      "searchable": 1,
+      "changeable": 1
+    },
+    {
+      "key": "Wexpan123ziyuanGuard",
+      "name": "💓‍123┃4K💓‍",
+      "type": 3,
+      "api": "csp_Wexpan123ziyuanGuard",
       "searchable": 1,
       "changeable": 1
     },
@@ -196,6 +204,14 @@
       "changeable": 1
     },
     {
+      "key": "Wexrenrenyingshi",
+      "name": "💥人人┃弹幕💥",
+      "type": 3,
+      "api": "csp_WexrenrenyingshiGuard",
+      "searchable": 1,
+      "changeable": 1
+    },
+    {
       "key": "賤賤",
       "name": "💥賤片┃p2p💥",
       "type": 3,
@@ -212,14 +228,6 @@
       "changeable": 1
     },
     {
-      "key": "Fujutv",
-      "name": "😁腐剧┃影视😁",
-      "type": 3,
-      "api": "csp_WexFujutvGuard",
-      "searchable": 1,
-      "changeable": 1
-    },
-    {
       "key": "WexquickvodGuard",
       "name": "🎇美剧┃秒播🎇",
       "type": 3,
@@ -232,14 +240,6 @@
       "name": "🎇急速┃秒播🎇",
       "type": 3,
       "api": "csp_Wex4KavGuard",
-      "searchable": 1,
-      "changeable": 1
-    },
-    {
-      "key": "Wexbaipiao",
-      "name": "🎇星星┃秒播🎇",
-      "type": 3,
-      "api": "csp_WexbaipiaoGuard",
       "searchable": 1,
       "changeable": 1
     },
@@ -783,6 +783,30 @@
       "name": "💓我的┃异动💓‍",
       "type": 3,
       "api": "csp_WexWoydpanGuard",
+      "searchable": 1,
+      "changeable": 1,
+      "timeout": 50,
+      "style": {
+        "type": "list"
+      }
+    },
+    {
+      "key": "xunlei",
+      "name": "💓我的┃讯蕾💓‍",
+      "type": 3,
+      "api": "csp_WexWoXunLeiPanGuard",
+      "searchable": 1,
+      "changeable": 1,
+      "timeout": 50,
+      "style": {
+        "type": "list"
+      }
+    },
+    {
+      "key": "baidu",
+      "name": "💓我的┃百度💓‍",
+      "type": 3,
+      "api": "csp_WexWoBaiduPanGuard",
       "searchable": 1,
       "changeable": 1,
       "timeout": 50,
