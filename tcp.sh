@@ -22,14 +22,17 @@ cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
 tcp_low=$(echo "$size_mb * 5120 / 76" | bc)
-tcp_mid=$(echo "$size_mb * 10240 / 38" | bc)
-tcp_high=$(echo "$size_mb * 20480 / 19" | bc)
+tcp_mid=$(echo "$size_mb * 10240 / 76" | bc)
+tcp_high=$(echo "$size_mb * 20480 / 76" | bc)
 
 udp_low=$(echo "$size_mb * 4096 / 60" | bc)
-udp_mid=$(echo "$size_mb * 8196 / 30" | bc)
-udp_high=$(echo "$size_mb * 12288 / 25" | bc)
+udp_mid=$(echo "$size_mb * 8196 / 60" | bc)
+udp_high=$(echo "$size_mb * 12288 / 60" | bc)
 
 conntrack_max=$(echo "$size_mb * 300 / 4" | bc)
+
+tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
+tcp_dy=$(( ($tcp_dyjs * 1024) / 2 ))
 
 break_end() {
     echo "操作完成"
@@ -134,7 +137,7 @@ net.core.default_qdisc=cake
 
 # ------ 网络调优: 基本 ------
 # TTL 配置, Linux 默认 64
-# net.ipv4.ip_default_ttl = 64
+net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
 net.ipv4.tcp_timestamps = 1
@@ -144,6 +147,7 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 vm.max_map_count = 262144
+vm.nr_hugepages = $tcp_dy
 
 # 全局套接字默认接受缓冲区 # 212992
 net.core.rmem_default = 262144
@@ -154,17 +158,17 @@ net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 10000000
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 32768 37500000 536870912
-net.ipv4.tcp_wmem = 32768 37500000 536870912
+net.ipv4.tcp_rmem = 4096 16777216 536870912
+net.ipv4.tcp_wmem = 4096 16777216 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 524288
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 655350
+net.ipv4.tcp_max_syn_backlog = 65535
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 100000
+net.core.netdev_max_backlog = 20000
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
@@ -192,7 +196,7 @@ net.netfilter.nf_conntrack_tcp_timeout_established = 3600
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 32768
+net.ipv4.tcp_max_tw_buckets = 1000000
 # 启用选择应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_sack = 1
@@ -221,7 +225,7 @@ net.ipv4.conf.all.rp_filter = 2
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 10
+net.ipv4.tcp_fin_timeout = 15
 # unix socket 最大队列
 net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
@@ -252,7 +256,7 @@ net.ipv4.udp_wmem_min = 16384
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 120
+net.ipv4.tcp_keepalive_time = 1200
 # 最大失败次数, 超过此值后将通知应用层连接失效
 net.ipv4.tcp_keepalive_probes = 3
 # 缩短 tcp keepalive 发送探测包的时间间隔
@@ -276,7 +280,7 @@ kernel.printk = 3 4 1 3
 # 设定程序core时生成的文件名格式
 kernel.core_pattern = core_%e
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
-vm.dirty_background_ratio = 2
+vm.dirty_background_ratio = 5
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
 vm.min_free_kbytes = 0
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
@@ -284,8 +288,9 @@ vm.min_free_kbytes = 0
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
 vm.swappiness = 5
 # 仅用10%做为系统cache
-vm.dirty_ratio = 5
+vm.dirty_ratio = 10
 vm.overcommit_memory = 1
+vm.overcommit_ratio = 80
 # 增加系统文件描述符限制
 # Fix error: too many open files
 # fs.file-max = 2048000
