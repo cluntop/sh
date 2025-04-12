@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.7"
-version_test="133"
+version="1.0.8"
+version_test="134"
 
 RED='\033[31m'
 GREEN='\033[32m'
