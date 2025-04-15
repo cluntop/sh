@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.0.8"
-version_test="134"
+version_test="135"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -148,6 +148,8 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 vm.max_map_count = 262144
 vm.nr_hugepages = $tcp_dy
+net.ipv4.tcp_shrink_window = 1
+net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 全局套接字默认接受缓冲区 # 212992
 net.core.rmem_default = 262144
@@ -158,12 +160,12 @@ net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 10000000
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 4096 16777216 536870912
+net.ipv4.tcp_rmem = 8192 16777216 536870912
 net.ipv4.tcp_wmem = 4096 16777216 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
-net.ipv4.tcp_notsent_lowat = 524288
+net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 65535
