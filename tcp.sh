@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.9"
-version_test="136"
+version="1.1.0"
+version_test="137"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -21,13 +21,13 @@ cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 # 获取系统内存大小（以 MB 为单位）
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-tcp_low=$(echo "$size_mb * 5120 / 76" | bc)
-tcp_mid=$(echo "$size_mb * 10240 / 76" | bc)
-tcp_high=$(echo "$size_mb * 20480 / 76" | bc)
+tcp_low=$(echo "$size_mb * 128 / 2" | bc)
+tcp_mid=$(echo "$size_mb * 256 / 2" | bc)
+tcp_high=$(echo "$size_mb * 512 / 2" | bc)
 
-udp_low=$(echo "$size_mb * 4096 / 60" | bc)
-udp_mid=$(echo "$size_mb * 8196 / 60" | bc)
-udp_high=$(echo "$size_mb * 12288 / 60" | bc)
+udp_low=$(echo "$size_mb * 110 / 3" | bc)
+udp_mid=$(echo "$size_mb * 220 / 3" | bc)
+udp_high=$(echo "$size_mb * 440 / 3" | bc)
 
 conntrack_max=$(echo "$size_mb * 300 / 4" | bc)
 
