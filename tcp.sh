@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.1.0"
-version_test="138"
+version="1.1.1"
+version_test="13"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -25,14 +25,14 @@ tcp_low=$(echo "$size_mb * 128 / 2" | bc)
 tcp_mid=$(echo "$size_mb * 256 / 2" | bc)
 tcp_high=$(echo "$size_mb * 512 / 2" | bc)
 
-udp_low=$(echo "$size_mb * 110 / 3" | bc)
-udp_mid=$(echo "$size_mb * 220 / 3" | bc)
-udp_high=$(echo "$size_mb * 440 / 3" | bc)
+udp_low=$(echo "$size_mb * 110 / 2" | bc)
+udp_mid=$(echo "$size_mb * 220 / 2" | bc)
+udp_high=$(echo "$size_mb * 440 / 2" | bc)
 
 conntrack_max=$(echo "$size_mb * 300 / 4" | bc)
 
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
-tcp_dy=$(( ($tcp_dyjs * 1024) / 2 ))
+tcp_dy=$(echo "$tcp_dyjs * 128 / 2" | bc)
 
 break_end() {
     echo "操作完成"
@@ -147,7 +147,7 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 vm.max_map_count = 262144
-vm.nr_hugepages = $tcp_dy
+# vm.nr_hugepages = $tcp_dy
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.tcp_collapse_max_bytes = 6291456
 
