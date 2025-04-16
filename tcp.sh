@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.0"
-version_test="137"
+version_test="138"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -170,7 +170,7 @@ net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 655350
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 20000
+net.core.netdev_max_backlog = 65535
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
