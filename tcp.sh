@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.0.8"
-version_test="135"
+version="1.0.9"
+version_test="136"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -153,28 +153,28 @@ net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 全局套接字默认接受缓冲区 # 212992
 net.core.rmem_default = 262144
-net.core.rmem_max = 536870912
+net.core.rmem_max = 16777216
 # 全局套接字默认发送缓冲区 # 212992
 net.core.wmem_default = 262144
-net.core.wmem_max = 536870912
+net.core.wmem_max = 16777216
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 10000000
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 8192 16777216 536870912
-net.ipv4.tcp_wmem = 4096 16777216 536870912
+net.ipv4.tcp_rmem = 8192 131072 536870912
+net.ipv4.tcp_wmem = 4096 65535 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.tcp_max_syn_backlog = 655350
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 20000
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
-net.ipv4.tcp_abort_on_overflow = 0
+net.ipv4.tcp_abort_on_overflow = 1
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 10000
 net.core.netdev_budget_usecs = 2000
@@ -191,10 +191,7 @@ net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_established = 3600
-# TIME-WAIT 状态调优
-# 4.12 内核中此参数已经永久废弃, 不用纠结是否需要开启
-# net.ipv4.tcp_tw_recycle = 0
-## 只对客户端生效, 服务器连接上游时也认为是客户端
+# 只对客户端生效, 服务器连接上游时也认为是客户端
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
@@ -206,17 +203,17 @@ net.ipv4.tcp_sack = 1
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 0
+net.ipv4.tcp_frto = 2
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
-net.ipv4.tcp_syn_retries = 2
-net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syn_retries = 3
+net.ipv4.tcp_synack_retries = 3
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
-net.ipv4.tcp_retries1 = 5
+net.ipv4.tcp_retries1 = 3
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
-net.ipv4.tcp_retries2 = 8
+net.ipv4.tcp_retries2 = 5
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
 
@@ -227,7 +224,7 @@ net.ipv4.conf.all.rp_filter = 2
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_fin_timeout = 30
 # unix socket 最大队列
 net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
@@ -248,21 +245,18 @@ net.ipv4.tcp_stdurg = 0
 net.ipv4.ip_no_pmtu_disc = 0
 
 # 用于指定UDP（用户数据报协议）接收缓冲区的最小大小。
-net.ipv4.udp_rmem_min = 16384
-net.ipv4.udp_wmem_min = 16384
+net.ipv4.udp_rmem_min = 8192
+net.ipv4.udp_wmem_min = 8192
 
-# 开启并记录欺骗, 源路由和重定向包
-# net.ipv4.conf.all.log_martians = 1
-# net.ipv4.conf.default.log_martians = 1
 # 处理无源路由的包
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 1200
+net.ipv4.tcp_keepalive_time = 600
 # 最大失败次数, 超过此值后将通知应用层连接失效
-net.ipv4.tcp_keepalive_probes = 3
+net.ipv4.tcp_keepalive_probes = 5
 # 缩短 tcp keepalive 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl = 30
+net.ipv4.tcp_keepalive_intvl = 10
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
@@ -295,11 +289,11 @@ vm.overcommit_memory = 1
 vm.overcommit_ratio = 80
 # 增加系统文件描述符限制
 # Fix error: too many open files
-# fs.file-max = 2048000
-fs.inotify.max_user_instances = 524288
+fs.file-max = 1024000
+fs.inotify.max_user_instances = 8192
 # 设置 inotify 监视的最大用户监视器数量。
-fs.inotify.max_user_watches = 524288
-# fs.nr_open = 1024000
+fs.inotify.max_user_watches = 8192
+fs.nr_open = 1024000
 # 内核响应魔术键
 kernel.sysrq = 0
 # 优化 CPU 设置
@@ -326,29 +320,10 @@ net.ipv4.tcp_moderate_rcvbuf = 1
 net.ipv4.tcp_tso_win_divisor = 3
 # 控制 TCP 协议在处理 TIME-WAIT 状态时的行为
 net.ipv4.tcp_rfc1337 = 0
-# 包转发. 出于安全考虑, Linux 系统默认禁止数据包转发
-# net.ipv4.ip_forward = 1
-# net.ipv4.conf.all.forwarding = 1
-# net.ipv4.conf.default.forwarding = 1
-# net.ipv4.conf.all.route_localnet = 1
 # 取消对广播 ICMP 包的回应
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 # 开启恶意 ICMP 错误消息保护
 net.ipv4.icmp_ignore_bogus_error_responses = 1
-
-# 设置控制所有网络接口上 IPv6 地址的自动配置
-# net.ipv6.conf.all.autoconf = 1
-# net.ipv6.conf.eth0.autoconf = 1
-
-# 控制所有接口是否接受路由器通告（Router Advertisements, RA）
-# net.ipv6.conf.all.accept_ra = 2
-# net.ipv6.conf.eth0.accept_ra = 2
-
-# 1 = IPv4 优先 / 0 = 6 优先
-# net.ipv6.conf.all.disable_ipv6 = 1
-# net.ipv6.conf.default.disable_ipv6 = 1
-# net.ipv6.conf.lo.disable_ipv6 = 1
-
 # 控制未解析（unresolved）的邻居（neighbor）项队列长度。
 net.ipv4.neigh.default.unres_qlen = 10
 net.ipv4.neigh.default.unres_qlen_bytes = 131072
@@ -363,6 +338,8 @@ net.ipv4.neigh.default.retrans_time_ms = 2000
 net.ipv4.tcp_thin_dupack = 1
 # 作用：重传超时后要去检查tcp stream
 net.ipv4.tcp_thin_linear_timeouts = 1
+# TCP Pacing Rate 调整参数（BBR 专用）
+net.ipv4.tcp_pacing_ca_ratio = 110
 # 作用：UDP队列里数据报的最大个数
 net.unix.max_dgram_qlen = 100
 
@@ -372,12 +349,34 @@ kernel.randomize_va_space = 1
 kernel.sem = 512 32000 100 256
 
 # 文件描述符的最大值
-fs.aio-max-nr = 1048576
+fs.aio-max-nr = 1024000
 
 kernel.msgmni = 65535
 kernel.msgmax = 65536
 # 修改消息队列长度
 kernel.msgmnb = 65536
+
+# 开启并记录欺骗, 源路由和重定向包
+# net.ipv4.conf.all.log_martians = 1
+# net.ipv4.conf.default.log_martians = 1
+# 包转发. 出于安全考虑, Linux 系统默认禁止数据包转发
+# net.ipv4.ip_forward = 1
+# net.ipv4.conf.all.forwarding = 1
+# net.ipv4.conf.default.forwarding = 1
+# net.ipv4.conf.all.route_localnet = 1
+# net.ipv6.conf.all.forwarding = 1
+# 设置控制所有网络接口上 IPv6 地址的自动配置
+# net.ipv6.conf.all.autoconf = 1
+# net.ipv6.conf.eth0.autoconf = 1
+
+# 控制所有接口是否接受路由器通告（Router Advertisements, RA）
+# net.ipv6.conf.all.accept_ra = 2
+# net.ipv6.conf.eth0.accept_ra = 2
+
+# 1 = IPv4 优先 / 0 = 6 优先
+# net.ipv6.conf.all.disable_ipv6 = 1
+# net.ipv6.conf.default.disable_ipv6 = 1
+# net.ipv6.conf.lo.disable_ipv6 = 1
 
 EOF
 
