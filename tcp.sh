@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.1"
-version_test="13"
+version_test="140"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -18,16 +18,15 @@ sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
 cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
-# 获取系统内存大小（以 MB 为单位）
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-tcp_low=$(echo "$size_mb * 128 / 2" | bc)
-tcp_mid=$(echo "$size_mb * 256 / 2" | bc)
-tcp_high=$(echo "$size_mb * 512 / 2" | bc)
+tcp_low=$(echo "$size_mb * 1024 / 64" | bc)
+tcp_mid=$(echo "$size_mb * 1024 / 32" | bc)
+tcp_high=$(echo "$size_mb * 1024 / 16" | bc)
 
-udp_low=$(echo "$size_mb * 110 / 2" | bc)
-udp_mid=$(echo "$size_mb * 220 / 2" | bc)
-udp_high=$(echo "$size_mb * 440 / 2" | bc)
+udp_low=$(echo "$size_mb * 1024 / 38" | bc)
+udp_mid=$(echo "$size_mb * 1024 / 28" | bc)
+udp_high=$(echo "$size_mb * 1024 / 18" | bc)
 
 conntrack_max=$(echo "$size_mb * 300 / 4" | bc)
 
@@ -153,28 +152,28 @@ net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 全局套接字默认接受缓冲区 # 212992
 net.core.rmem_default = 262144
-net.core.rmem_max = 16777216
+net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992
 net.core.wmem_default = 262144
-net.core.wmem_max = 16777216
+net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
-net.core.optmem_max = 10000000
+net.core.optmem_max = 262144
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 8192 131072 536870912
-net.ipv4.tcp_wmem = 4096 65535 536870912
+net.ipv4.tcp_rmem = 65535 16777216 536870912
+net.ipv4.tcp_wmem = 65535 16777216 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 655350
+net.ipv4.tcp_max_syn_backlog = 65535
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 65535
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65535
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
-net.ipv4.tcp_abort_on_overflow = 1
+net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 10000
 net.core.netdev_budget_usecs = 2000
@@ -195,7 +194,7 @@ net.netfilter.nf_conntrack_tcp_timeout_established = 3600
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 1000000
+net.ipv4.tcp_max_tw_buckets = 100000
 # 启用选择应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_sack = 1
@@ -208,7 +207,7 @@ net.ipv4.tcp_frto = 2
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
 net.ipv4.tcp_syn_retries = 3
-net.ipv4.tcp_synack_retries = 3
+net.ipv4.tcp_synack_retries = 2
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 3
@@ -219,12 +218,12 @@ net.ipv4.tcp_syncookies = 0
 
 # 开启反向路径过滤
 # Aliyun 负载均衡实例后端的 ECS 需要设置为 0
-net.ipv4.conf.default.rp_filter = 2
-net.ipv4.conf.all.rp_filter = 2
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.all.rp_filter = 1
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 30
+net.ipv4.tcp_fin_timeout = 10
 # unix socket 最大队列
 net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
@@ -238,7 +237,7 @@ net.ipv4.tcp_mtu_probing = 1
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
 net.ipv4.tcp_no_metrics_save = 1
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
-net.ipv4.tcp_init_cwnd = 32
+net.ipv4.tcp_init_cwnd = 96
 # 控制 TCP 紧急指针（Urgent Pointer） 的解释方式。
 net.ipv4.tcp_stdurg = 0
 # 控制是否启用 路径 MTU 发现（Path MTU Discovery, PMTUD）。
@@ -261,7 +260,7 @@ net.ipv4.tcp_keepalive_intvl = 10
 net.ipv4.tcp_orphan_retries = 1
 # 系统所能处理不属于任何进程的TCP sockets最大数量
 # 系统中最多有多少个 TCP 套接字不被关联到任何一个用户文件句柄上
-net.ipv4.tcp_max_orphans = 100000
+net.ipv4.tcp_max_orphans = 65536
 # arp_table的缓存限制优化
 net.ipv4.neigh.default.gc_stale_time = 120
 net.ipv6.neigh.default.gc_stale_time = 120
@@ -282,7 +281,7 @@ vm.min_free_kbytes = 0
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 80
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
-vm.swappiness = 5
+vm.swappiness = 10
 # 仅用10%做为系统cache
 vm.dirty_ratio = 10
 vm.overcommit_memory = 1
@@ -296,6 +295,7 @@ fs.inotify.max_user_watches = 8192
 fs.nr_open = 1024000
 # 内核响应魔术键
 kernel.sysrq = 0
+kernel.panic = 0
 # 优化 CPU 设置
 kernel.sched_autogroup_enabled = 0
 # 禁用 NUMA balancing
@@ -351,6 +351,7 @@ kernel.sem = 512 32000 100 256
 # 文件描述符的最大值
 fs.aio-max-nr = 1024000
 
+kernel.pid_max = 65535
 kernel.msgmni = 65535
 kernel.msgmax = 65536
 # 修改消息队列长度
