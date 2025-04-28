@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.1"
-version_test="141"
+version_test="142"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -167,7 +167,7 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 655350
+net.ipv4.tcp_max_syn_backlog = 10240
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 65535
 # 全连接队列大小（Accept 队列）
