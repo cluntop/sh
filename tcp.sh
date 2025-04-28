@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.1"
-version_test="140"
+version_test="141"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -167,11 +167,11 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 65535
+net.ipv4.tcp_max_syn_backlog = 655350
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 65535
 # 全连接队列大小（Accept 队列）
-net.core.somaxconn = 65535
+net.core.somaxconn = 40960
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 0
 # 所有网卡每次软中断最多处理的总帧数量
@@ -277,7 +277,7 @@ kernel.core_pattern = core_%e
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
 vm.dirty_background_ratio = 5
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
-vm.min_free_kbytes = 0
+# vm.min_free_kbytes = 0
 # 该值高于100, 则将导致内核倾向于回收directory和inode cache
 # vm.vfs_cache_pressure = 80
 # 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
