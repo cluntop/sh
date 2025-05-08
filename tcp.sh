@@ -150,11 +150,11 @@ vm.max_map_count = 262144
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.tcp_collapse_max_bytes = 6291456
 
-# 全局套接字默认接受缓冲区 # 212992
-net.core.rmem_default = 262144
+# 全局套接字默认接受缓冲区 # 212992 # 212992
+net.core.rmem_default = 26214400
 net.core.rmem_max = 536870912
-# 全局套接字默认发送缓冲区 # 212992
-net.core.wmem_default = 262144
+# 全局套接字默认发送缓冲区 # 212992 # 212992
+net.core.wmem_default = 26214400
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 262144
@@ -169,7 +169,7 @@ net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 32768
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 65535
+net.core.netdev_max_backlog = 30000
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 40960
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
@@ -244,8 +244,8 @@ net.ipv4.tcp_stdurg = 0
 net.ipv4.ip_no_pmtu_disc = 0
 
 # 用于指定UDP（用户数据报协议）接收缓冲区的最小大小。
-net.ipv4.udp_rmem_min = 8192
-net.ipv4.udp_wmem_min = 8192
+net.ipv4.udp_rmem_min = 16384
+net.ipv4.udp_wmem_min = 16384
 
 # 处理无源路由的包
 net.ipv4.conf.all.accept_source_route = 0
