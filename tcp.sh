@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.1.1"
-version_test="144"
+version="1.1.2"
+version_test="145"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -31,7 +31,7 @@ udp_high=$(echo "$size_mb * 1024 / 18" | bc)
 conntrack_max=$(echo "$size_mb * 300 / 4" | bc)
 
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
-tcp_dy=$(echo "$tcp_dyjs * 128 / 2" | bc)
+tcp_dy=$(echo "$tcp_dyjs * 16 / 2" | bc)
 
 break_end() {
     echo "操作完成"
@@ -108,7 +108,7 @@ sed -i "s/#*net.ipv4.udp_mem =.*/net.ipv4.udp_mem = $udp_low $udp_mid $udp_high/
 }
 
 cleaning_trash() {
-curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/refs/heads/main/cleaning_trash.sh && chmod +x cleaning_trash.sh && ./cleaning_trash.sh
+curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/refs/heads/main/trash.sh && chmod +x trash.sh && ./trash.sh
 }
 
 sysctl_p() {
@@ -146,7 +146,7 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 vm.max_map_count = 262144
-# vm.nr_hugepages = $tcp_dy
+vm.nr_hugepages = $tcp_dy
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.tcp_collapse_max_bytes = 6291456
 
@@ -167,13 +167,13 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 32768
+net.ipv4.tcp_max_syn_backlog = 655350
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 30000
+net.core.netdev_max_backlog = 80000
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 40960
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
-net.ipv4.tcp_abort_on_overflow = 0
+net.ipv4.tcp_abort_on_overflow = 1
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 10000
 net.core.netdev_budget_usecs = 2000
@@ -233,7 +233,7 @@ net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
-net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_mtu_probing = 0
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
 net.ipv4.tcp_no_metrics_save = 1
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
@@ -347,6 +347,20 @@ net.unix.max_dgram_qlen = 100
 kernel.randomize_va_space = 1
 # Linux 内核中用于控制系统信号量（Semaphore）的参数。
 kernel.sem = 512 32000 100 256
+
+# 虚拟化优化（KVM 环境）
+kernel.sched_min_granularity_ns = 10000000
+kernel.sched_wakeup_granularity_ns = 15000000
+vm.dirty_writeback_centisecs = 1500
+# 根据实际需求调整
+# vm.nr_hugepages = 16
+
+# 安全设置
+kernel.kptr_restrict = 2
+kernel.perf_event_paranoid = 3
+kernel.yama.ptrace_scope = 1
+# vm.mmap_min_addr = 65536
+vm.mmap_min_addr = 16384
 
 # 文件描述符的最大值
 fs.aio-max-nr = 1024000
