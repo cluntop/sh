@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.1.2"
-version_test="146"
+version="1.1.3"
+version_test="147"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -356,9 +356,9 @@ vm.dirty_writeback_centisecs = 1500
 # vm.nr_hugepages = 16
 
 # 安全设置
-kernel.kptr_restrict = 2
-kernel.perf_event_paranoid = 3
-kernel.yama.ptrace_scope = 1
+# kernel.kptr_restrict = 2
+# kernel.perf_event_paranoid = 3
+# kernel.yama.ptrace_scope = 1
 # vm.mmap_min_addr = 65536
 vm.mmap_min_addr = 16384
 
