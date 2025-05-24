@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.2"
-version_test="145"
+version_test="146"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -151,10 +151,10 @@ net.ipv4.tcp_shrink_window = 1
 net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 全局套接字默认接受缓冲区 # 212992 # 212992 #26214400
-net.core.rmem_default = 4194304
+net.core.rmem_default = 262144
 net.core.rmem_max = 536870912
 # 全局套接字默认发送缓冲区 # 212992 # 212992 #26214400
-net.core.wmem_default = 4194304
+net.core.wmem_default = 262144
 net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 262144
