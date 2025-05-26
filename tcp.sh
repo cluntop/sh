@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.1.3"
-version_test="148"
+version="1.1.4"
+version_test="149"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -146,7 +146,7 @@ net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 vm.max_map_count = 262144
-vm.nr_hugepages = $tcp_dy
+# vm.nr_hugepages = $tcp_dy
 net.ipv4.tcp_shrink_window = 1
 net.ipv4.tcp_collapse_max_bytes = 6291456
 
@@ -356,9 +356,9 @@ vm.dirty_writeback_centisecs = 1500
 # vm.nr_hugepages = 16
 
 # 安全设置
-# kernel.kptr_restrict = 2
-# kernel.perf_event_paranoid = 3
-# kernel.yama.ptrace_scope = 1
+kernel.kptr_restrict = 2
+kernel.perf_event_paranoid = 3
+kernel.yama.ptrace_scope = 1
 # vm.mmap_min_addr = 65536
 vm.mmap_min_addr = 16384
 
