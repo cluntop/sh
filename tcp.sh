@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.5"
-version_test="151"
+version_test="152"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -167,7 +167,7 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 16384
+net.ipv4.tcp_max_syn_backlog = 163840
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 80000
 # 全连接队列大小（Accept 队列）
@@ -207,7 +207,7 @@ net.ipv4.tcp_frto = 2
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
 net.ipv4.tcp_syn_retries = 3
-net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_synack_retries = 3
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
 net.ipv4.tcp_retries1 = 3
@@ -233,10 +233,10 @@ net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # TCP基础最大报文段大小 MSS
-net.ipv4.tcp_base_mss = 1400
+net.ipv4.tcp_base_mss = 1460
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
 net.ipv4.tcp_mtu_probing = 1
-net.ipv4.tcp_mtu_probe_floor = 576
+# net.ipv4.tcp_mtu_probe_floor = 576
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
 net.ipv4.tcp_no_metrics_save = 0
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
@@ -254,7 +254,7 @@ net.ipv4.udp_wmem_min = 16384
 net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 600
+net.ipv4.tcp_keepalive_time = 900
 # 最大失败次数, 超过此值后将通知应用层连接失效
 net.ipv4.tcp_keepalive_probes = 5
 # 缩短 tcp keepalive 发送探测包的时间间隔
