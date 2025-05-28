@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
-version="1.1.4"
-version_test="150"
+version="1.1.5"
+version_test="151"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -136,10 +136,10 @@ net.core.default_qdisc=cake
 
 # ------ 网络调优: 基本 ------
 # TTL 配置, Linux 默认 64
-net.ipv4.ip_default_ttl = 64
+# net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
-net.ipv4.tcp_timestamps = 1
+# net.ipv4.tcp_timestamps = 1
 # ------ END 网络调优: 基本 ------
 
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
@@ -159,15 +159,15 @@ net.core.wmem_max = 536870912
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 262144
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 16384 16777216 536870912
-net.ipv4.tcp_wmem = 16384 16777216 536870912
+net.ipv4.tcp_rmem = 8192 262144 536870912
+net.ipv4.tcp_wmem = 4096 16384 536870912
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 655350
+net.ipv4.tcp_max_syn_backlog = 16384
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 80000
 # 全连接队列大小（Accept 队列）
@@ -185,16 +185,16 @@ net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
 net.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_max = $conntrack_max
-net.netfilter.nf_conntrack_buckets = 555000
+# net.netfilter.nf_conntrack_buckets = 555000
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
-net.netfilter.nf_conntrack_tcp_timeout_established = 3600
+net.netfilter.nf_conntrack_tcp_timeout_established = 180
 # 只对客户端生效, 服务器连接上游时也认为是客户端
 net.ipv4.tcp_tw_reuse = 1
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 100000
+net.ipv4.tcp_max_tw_buckets = 10240
 # 启用选择应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_sack = 1
@@ -232,10 +232,13 @@ net.ipv4.route.gc_timeout = 100
 net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
+# TCP基础最大报文段大小 MSS
+net.ipv4.tcp_base_mss = 1400
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
-net.ipv4.tcp_mtu_probing = 0
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_mtu_probe_floor = 576
 # 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
-net.ipv4.tcp_no_metrics_save = 1
+net.ipv4.tcp_no_metrics_save = 0
 # 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
 net.ipv4.tcp_init_cwnd = 96
 # 控制 TCP 紧急指针（Urgent Pointer） 的解释方式。
@@ -298,10 +301,10 @@ kernel.sysrq = 0
 kernel.panic = 0
 # 优化 CPU 设置
 kernel.sched_autogroup_enabled = 0
+# IPv4 TCP 低延迟参数
+net.ipv4.tcp_low_latency = 1
 # 禁用 NUMA balancing
 kernel.numa_balancing = 0
-# IPv4 TCP 低延迟参数
-net.ipv4.tcp_low_latency = 0
 
 # 内存区域（Zone）回收策略
 vm.zone_reclaim_mode = 0
