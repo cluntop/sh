@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.5"
-version_test="153"
+version_test="154"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -139,7 +139,7 @@ net.core.default_qdisc=cake
 # net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
-# net.ipv4.tcp_timestamps = 1
+net.ipv4.tcp_timestamps = 0
 # ------ END 网络调优: 基本 ------
 
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
@@ -197,7 +197,7 @@ net.ipv4.tcp_tw_reuse = 1
 net.ipv4.tcp_max_tw_buckets = 10240
 # 启用选择应答
 # 对于广域网通信应当启用
-net.ipv4.tcp_sack = 1
+net.ipv4.tcp_sack = 0
 # 启用转发应答
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
