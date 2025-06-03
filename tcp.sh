@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.5"
-version_test="152"
+version_test="153"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -169,14 +169,14 @@ net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 163840
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 80000
+net.core.netdev_max_backlog = 250000
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 40960
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 1
 # 所有网卡每次软中断最多处理的总帧数量
-net.core.netdev_budget = 10000
-net.core.netdev_budget_usecs = 2000
+net.core.netdev_budget = 600
+net.core.netdev_budget_usecs = 4000
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
 net.ipv4.tcp_window_scaling = 1
