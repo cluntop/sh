@@ -4,7 +4,7 @@
 # curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.5"
-version_test="155"
+version_test="156"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -167,7 +167,7 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.tcp_notsent_lowat = 131072
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 163840
+net.ipv4.tcp_max_syn_backlog = 262144
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 250000
 # 全连接队列大小（Accept 队列）
@@ -210,9 +210,9 @@ net.ipv4.tcp_syn_retries = 3
 net.ipv4.tcp_synack_retries = 3
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
-net.ipv4.tcp_retries1 = 3
+net.ipv4.tcp_retries1 = 5
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
-net.ipv4.tcp_retries2 = 5
+net.ipv4.tcp_retries2 = 8
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
 
