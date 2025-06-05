@@ -1,7 +1,6 @@
 #!/bin/bash
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
-# curl https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh && ./clun_tcp.sh
 
 version="1.1.5"
 version_test="156"
