@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.5"
-version_test="157"
+version_test="158"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -131,7 +131,7 @@ Install_sysctl() {
 cat >/etc/sysctl.conf<<EOF
 
 net.ipv4.tcp_congestion_control=bbr
-net.core.default_qdisc=cake
+net.core.default_qdisc=fq_pie
 
 # ------ 网络调优: 基本 ------
 # TTL 配置, Linux 默认 64
