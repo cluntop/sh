@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.5"
-version_test="156"
+version_test="157"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -138,7 +138,7 @@ net.core.default_qdisc=cake
 # net.ipv4.ip_default_ttl = 64
 
 # 参阅 RFC 1323. 应当启用.
-net.ipv4.tcp_timestamps = 0
+# net.ipv4.tcp_timestamps = 1
 # ------ END 网络调优: 基本 ------
 
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
