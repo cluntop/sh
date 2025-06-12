@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.6"
-version_test="160"
+version_test="161"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -147,7 +147,7 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 vm.max_map_count = 262144
 # vm.nr_hugepages = $tcp_dy
 net.ipv4.tcp_shrink_window = 1
-net.ipv4.tcp_collapse_max_bytes = 6291456
+# net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 全局套接字默认接受缓冲区 # 212992 # 212992 #26214400
 net.core.rmem_default = 9999999
@@ -163,7 +163,7 @@ net.ipv4.tcp_wmem = 32768 1638400 104857600
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 # net.ipv4.tcp_collapse_max_bytes = 0
-net.ipv4.tcp_notsent_lowat = 131072
+# net.ipv4.tcp_notsent_lowat = 1310720
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 250000
@@ -174,8 +174,8 @@ net.core.somaxconn = 262144
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 1
 # 所有网卡每次软中断最多处理的总帧数量
-net.core.netdev_budget = 16000
-net.core.netdev_budget_usecs = 5000
+net.core.netdev_budget = 600
+net.core.netdev_budget_usecs = 4000
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
 net.ipv4.tcp_window_scaling = 1
@@ -184,7 +184,7 @@ net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
 net.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_max = $conntrack_max
-net.netfilter.nf_conntrack_buckets = 555000
+# net.netfilter.nf_conntrack_buckets = 555000
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
