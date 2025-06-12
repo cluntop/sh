@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.6"
-version_test="164"
+version_test="165"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -164,7 +164,7 @@ net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 # net.ipv4.tcp_collapse_max_bytes = 0
 # net.ipv4.tcp_notsent_lowat = 1310720
-net.ipv4.tcp_notsent_lowat = 0
+# net.ipv4.tcp_notsent_lowat = 0
 net.ipv4.ip_local_port_range = 1024 65536
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 250000
@@ -202,7 +202,7 @@ net.ipv4.tcp_sack = 0
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 0
+net.ipv4.tcp_frto = 2
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
