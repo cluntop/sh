@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.5"
-version_test="158"
+version_test="159"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -150,27 +150,27 @@ net.ipv4.tcp_shrink_window = 1
 net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 全局套接字默认接受缓冲区 # 212992 # 212992 #26214400
-net.core.rmem_default = 4194304
-net.core.rmem_max = 536870912
+net.core.rmem_default = 9999999
+net.core.rmem_max = 104857600
 # 全局套接字默认发送缓冲区 # 212992 # 212992 #26214400
-net.core.wmem_default = 4194304
-net.core.wmem_max = 536870912
+net.core.wmem_default = 9999999
+net.core.wmem_max = 104857600
 # 控制单个套接字（socket）可分配的附加选项内存的最大值。
 net.core.optmem_max = 262144
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 8192 262144 536870912
-net.ipv4.tcp_wmem = 4096 16384 536870912
+net.ipv4.tcp_rmem = 65536 26214400 104857600
+net.ipv4.tcp_wmem = 32768 1638400 104857600
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 net.ipv4.tcp_collapse_max_bytes = 0
-net.ipv4.tcp_notsent_lowat = 131072
+net.ipv4.tcp_notsent_lowat = 1310720
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 262144
+net.ipv4.tcp_max_syn_backlog = 250000
 # 网卡接收队列大小（所有协议数据包）
 net.core.netdev_max_backlog = 250000
 # 全连接队列大小（Accept 队列）
-net.core.somaxconn = 250000
+net.core.somaxconn = 262144
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 1
 # 所有网卡每次软中断最多处理的总帧数量
@@ -201,7 +201,7 @@ net.ipv4.tcp_sack = 0
 # 对于广域网通信应当启用
 net.ipv4.tcp_fack = 1
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 2
+net.ipv4.tcp_frto = 0
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
 # TCP SYN 连接超时重传次数
@@ -310,6 +310,7 @@ vm.zone_reclaim_mode = 0
 
 # TCP FastOpen
 # net.ipv4.tcp_fastopen = 3
+# net.ipv4.tcp_fastopen_blackhole_timeout_sec = 0
 # TCP 流中重排序的数据报最大数量
 net.ipv4.tcp_reordering = 5
 # 控制 TCP 协议在重传数据时的行为。
