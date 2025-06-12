@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.6"
-version_test="162"
+version_test="163"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -163,8 +163,8 @@ net.ipv4.tcp_wmem = 32768 1638400 104857600
 net.ipv4.tcp_adv_win_scale = -2
 # net.ipv4.tcp_collapse_max_bytes = 8388608
 # net.ipv4.tcp_collapse_max_bytes = 0
-# net.ipv4.tcp_notsent_lowat = 1310720
-net.ipv4.tcp_notsent_lowat = 0
+net.ipv4.tcp_notsent_lowat = 1310720
+# net.ipv4.tcp_notsent_lowat = 0
 net.ipv4.ip_local_port_range = 1024 65535
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 250000
