@@ -97,8 +97,8 @@ def generate_outputs(channels, template_channels):
     written_urls = set()
     current_date = datetime.now().strftime("%Y-%m-%d")
     
-    with open("lib/iptv.m3u", "w", encoding="utf-8") as m3u, \
-         open("lib/iptv.txt", "w", encoding="utf-8") as txt:
+    with open("iptv.m3u", "w", encoding="utf-8") as m3u, \
+         open("iptv.txt", "w", encoding="utf-8") as txt:
 
         # Write channel list
         total_count = 0
