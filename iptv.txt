@@ -1804,8 +1804,8 @@ CGTN阿语,https://0472.org/hls/cgtna.m3u8$LR•IPV4•7『线路7』
 湖南卫视,http://antvlive.ab5c6921.cdnviet.com/antv/playlist.m3u8$LR•IPV4•96『线路92』
 湖南卫视,http://124.116.183.146:9901/tsfile/live/0128_1.m3u8$LR•IPV4•96『线路93』
 湖南卫视,http://120.76.248.139/live/bfgd/4200000086.m3u8$LR•IPV4•96『线路94』
-湖南卫视,http://tvgslb.hn.chinamobile.com:8089/180000001001/00000001000000000064000000308827/main.m3u8$LR•IPV4•96『线路95』
-湖南卫视,https://py.doube.eu.org/xinghuo?url=/Hunan-Satellite-TV/931$LR•IPV4•96『线路96』
+湖南卫视,https://py.doube.eu.org/xinghuo?url=/Hunan-Satellite-TV/931$LR•IPV4•96『线路95』
+湖南卫视,http://tvgslb.hn.chinamobile.com:8089/180000001001/00000001000000000064000000308827/main.m3u8$LR•IPV4•96『线路96』
 浙江卫视,http://ali-m-l.cztv.com/channels/lantian/channel001/1080p.m3u8$LR•IPV4•108『线路1』
 浙江卫视,http://[2409:8087:1a01:df::7005]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226339/index.m3u8$LR•IPV6•108『线路2』
 浙江卫视,http://a21709.tv.netsite.cc/proxy/257951448/257951448.m3u8$LR•IPV4•108『线路3』
