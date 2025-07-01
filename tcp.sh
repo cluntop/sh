@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="169"
+version_test="170"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -346,8 +346,8 @@ kernel.numa_balancing = 0
 vm.zone_reclaim_mode = 0
 
 # TCP FastOpen
-# net.ipv4.tcp_fastopen = 3
-# net.ipv4.tcp_fastopen_blackhole_timeout_sec = 0
+net.ipv4.tcp_fastopen = 3
+net.ipv4.tcp_fastopen_blackhole_timeout_sec = 0
 
 # TCP 流中重排序的数据报最大数量
 net.ipv4.tcp_reordering = 5
