@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="167"
+version_test="168"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -160,10 +160,10 @@ net.ipv4.tcp_adv_win_scale = -2
 net.ipv4.ip_local_port_range = 1024 65536
 
 # 半连接队列大小（SYN 队列）
-net.ipv4.tcp_max_syn_backlog = 250000
+net.ipv4.tcp_max_syn_backlog = 350000
 
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 102400
+net.core.netdev_max_backlog = 655360
 
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 655360
@@ -196,7 +196,7 @@ net.ipv4.tcp_tw_reuse = 1
 
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
-net.ipv4.tcp_max_tw_buckets = 10240
+net.ipv4.tcp_max_tw_buckets = 102400
 
 # 启用选择应答
 # 对于广域网通信应当启用
