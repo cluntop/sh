@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.1.6"
-version_test="166"
+version="1.1.7"
+version_test="167"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -163,16 +163,16 @@ net.ipv4.ip_local_port_range = 1024 65536
 net.ipv4.tcp_max_syn_backlog = 250000
 
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 250000
+net.core.netdev_max_backlog = 102400
 
 # 全连接队列大小（Accept 队列）
-net.core.somaxconn = 262144
+net.core.somaxconn = 655360
 
 # 配置TCP/IP协议栈。控制在TCP接收缓冲区溢出时的行为。
 net.ipv4.tcp_abort_on_overflow = 1
 
 # 所有网卡每次软中断最多处理的总帧数量
-net.core.netdev_budget = 16000
+net.core.netdev_budget = 50000
 net.core.netdev_budget_usecs = 5000
 
 # TCP 自动窗口
@@ -324,10 +324,10 @@ vm.overcommit_ratio = 80
 # 增加系统文件描述符限制
 # Fix error: too many open files
 fs.file-max = 102400000
-fs.inotify.max_user_instances = 8192
+fs.inotify.max_user_instances = 16384
 
 # 设置 inotify 监视的最大用户监视器数量。
-fs.inotify.max_user_watches = 8192
+fs.inotify.max_user_watches = 16384
 fs.nr_open = 1024000
 
 # 内核响应魔术键
