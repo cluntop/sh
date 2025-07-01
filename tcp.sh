@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="168"
+version_test="169"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -154,8 +154,8 @@ net.core.wmem_max = 536870912
 net.core.optmem_max = 262144
 
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 8192 262144 536870912
-net.ipv4.tcp_wmem = 4096 16384 536870912
+net.ipv4.tcp_rmem = 9192 350000 536870912
+net.ipv4.tcp_wmem = 4096 65536 536870912
 net.ipv4.tcp_adv_win_scale = -2
 net.ipv4.ip_local_port_range = 1024 65536
 
@@ -163,7 +163,7 @@ net.ipv4.ip_local_port_range = 1024 65536
 net.ipv4.tcp_max_syn_backlog = 350000
 
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 655360
+net.core.netdev_max_backlog = 250000
 
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 655360
