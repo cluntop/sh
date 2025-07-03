@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="172"
+version_test="173"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -221,7 +221,7 @@ net.ipv4.tcp_sack = 1
 net.ipv4.tcp_fack = 1
 
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 2
+net.ipv4.tcp_frto = 0
 
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
