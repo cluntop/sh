@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="171"
+version_test="172"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -143,7 +143,7 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 net.ipv4.tcp_shrink_window = 1
 
 # 设置 TCP 接收缓冲区内存合并的最大字节数阈值
-# net.ipv4.tcp_collapse_max_bytes = 6291456
+net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 设置 TCP 发送缓冲区中“未发送数据量”的低水位阈值
 net.ipv4.tcp_notsent_lowat = 131072
