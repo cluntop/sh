@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="170"
+version_test="171"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -19,15 +19,15 @@ cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-tcp_low=$(echo "$size_mb * 1024 / 64" | bc)
-tcp_mid=$(echo "$size_mb * 1024 / 32" | bc)
-tcp_high=$(echo "$size_mb * 1024 / 16" | bc)
+tcp_low=$(echo "$size_mb * 1024 / 32" | bc)
+tcp_mid=$(echo "$size_mb * 1024 / 16" | bc)
+tcp_high=$(echo "$size_mb * 1024 / 8" | bc)
 
-udp_low=$(echo "$size_mb * 1024 / 38" | bc)
-udp_mid=$(echo "$size_mb * 1024 / 28" | bc)
-udp_high=$(echo "$size_mb * 1024 / 18" | bc)
+udp_low=$(echo "$size_mb * 1024 / 19" | bc)
+udp_mid=$(echo "$size_mb * 1024 / 14" | bc)
+udp_high=$(echo "$size_mb * 1024 / 9" | bc)
 
-conntrack_max=$(echo "$size_mb * 300 / 4" | bc)
+conntrack_max=$(echo "$size_mb * 16384 / 4" | bc)
 
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 16 / 2" | bc)
@@ -133,16 +133,30 @@ cat >/etc/sysctl.conf<<EOF
 net.ipv4.tcp_congestion_control=bbr
 net.core.default_qdisc=fq_pie
 
-# net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
-# net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
+net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
+net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 # vm.max_map_count = 262144
 # vm.nr_hugepages = $tcp_dy
+
+# 控制 Linux 内核是否启用接收窗口的智能收缩机制
 net.ipv4.tcp_shrink_window = 1
+
+# 设置 TCP 接收缓冲区内存合并的最大字节数阈值
+# net.ipv4.tcp_collapse_max_bytes = 6291456
+
+# 设置 TCP 发送缓冲区中“未发送数据量”的低水位阈值
+net.ipv4.tcp_notsent_lowat = 131072
+
+# 允许路由本地环回网络的流量
+net.ipv4.conf.all.route_localnet = 1
+
+# 启用 TCP 的早期重传机制
+net.ipv4.tcp_early_retrans = 1
 
 # 全局套接字默认接受缓冲区
 # 212992 # 212992 #26214400
-# net.core.rmem_default = 65536
+net.core.rmem_default = 2621440
 net.core.rmem_max = 536870912
 
 # 全局套接字默认发送缓冲区
@@ -183,9 +197,9 @@ net.ipv4.tcp_window_scaling = 1
 net.ipv4.tcp_slow_start_after_idle = 0
 
 # nf_conntrack 调优
-# net.nf_conntrack_max = $conntrack_max
-# net.netfilter.nf_conntrack_max = $conntrack_max
-# net.netfilter.nf_conntrack_buckets = 555000
+net.nf_conntrack_max = $conntrack_max
+net.netfilter.nf_conntrack_max = $conntrack_max
+net.netfilter.nf_conntrack_buckets = 655360
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
@@ -200,7 +214,7 @@ net.ipv4.tcp_max_tw_buckets = 102400
 
 # 启用选择应答
 # 对于广域网通信应当启用
-net.ipv4.tcp_sack = 0
+net.ipv4.tcp_sack = 1
 
 # 启用转发应答
 # 对于广域网通信应当启用
@@ -218,10 +232,10 @@ net.ipv4.tcp_synack_retries = 3
 
 # TCP SYN 连接超时时间, 设置为 5 约为 30s
 # 放弃回应一个 TCP 连接请求前, 需要进行多少次重试
-net.ipv4.tcp_retries1 = 3
+net.ipv4.tcp_retries1 = 5
 
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
-net.ipv4.tcp_retries2 = 5
+net.ipv4.tcp_retries2 = 8
 
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
@@ -241,30 +255,30 @@ net.unix.max_dgram_qlen = 100
 # 路由缓存刷新频率
 net.ipv4.route.gc_timeout = 100
 
-# 它用于控制是否忽略所有的ICMP Echo请求。
+# 它用于控制是否忽略所有的ICMP Echo请求
 net.ipv4.icmp_echo_ignore_all = 1
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # TCP基础最大报文段大小 MSS
 net.ipv4.tcp_base_mss = 1460
 
-# 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用（大多数情况是这样）
+# 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
 net.ipv4.tcp_mtu_probing = 1
 # net.ipv4.tcp_mtu_probe_floor = 576
 
-# 控制是否保存 TCP 连接的度量值（如 RTT、拥塞窗口等） 到路由缓存中。
+# 控制是否保存 TCP 连接的度量值到路由缓存中
 net.ipv4.tcp_no_metrics_save = 1
 
-# 控制 TCP 初始拥塞窗口（Initial Congestion Window） 的大小。
+# 控制 TCP 初始拥塞窗口的大小
 net.ipv4.tcp_init_cwnd = 96
 
-# 控制 TCP 紧急指针（Urgent Pointer） 的解释方式。
+# 控制 TCP 紧急指针的解释方式
 net.ipv4.tcp_stdurg = 0
 
-# 控制是否启用 路径 MTU 发现（Path MTU Discovery, PMTUD）。
+# 控制是否启用 路径 MTU 发现
 net.ipv4.ip_no_pmtu_disc = 0
 
-# 用于指定UDP（用户数据报协议）接收缓冲区的最小大小。
+# 用于指定UDP接收缓冲区的最小大小
 net.ipv4.udp_rmem_min = 16384
 net.ipv4.udp_wmem_min = 16384
 
@@ -337,7 +351,7 @@ kernel.panic = 0
 # 优化 CPU 设置
 kernel.sched_autogroup_enabled = 0
 
-# IPv4 TCP 低延迟参数
+# IPv4 TCP 低延迟参数
 net.ipv4.tcp_low_latency = 1
 # 禁用 NUMA balancing
 kernel.numa_balancing = 0
