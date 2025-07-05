@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="173"
+version_test="174"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -168,7 +168,7 @@ net.core.wmem_max = 536870912
 net.core.optmem_max = 262144
 
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 9192 350000 536870912
+net.ipv4.tcp_rmem = 8192 250000 536870912
 net.ipv4.tcp_wmem = 4096 65536 536870912
 net.ipv4.tcp_adv_win_scale = -2
 net.ipv4.ip_local_port_range = 1024 65536
@@ -214,11 +214,11 @@ net.ipv4.tcp_max_tw_buckets = 102400
 
 # 启用选择应答
 # 对于广域网通信应当启用
-net.ipv4.tcp_sack = 1
+net.ipv4.tcp_sack = 0
 
 # 启用转发应答
 # 对于广域网通信应当启用
-net.ipv4.tcp_fack = 1
+net.ipv4.tcp_fack = 0
 
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
 net.ipv4.tcp_frto = 0
@@ -338,10 +338,10 @@ vm.overcommit_ratio = 80
 # 增加系统文件描述符限制
 # Fix error: too many open files
 fs.file-max = 102400000
-fs.inotify.max_user_instances = 16384
+fs.inotify.max_user_instances = 65536
 
 # 设置 inotify 监视的最大用户监视器数量。
-fs.inotify.max_user_watches = 16384
+fs.inotify.max_user_watches = 524288
 fs.nr_open = 1024000
 
 # 内核响应魔术键
@@ -392,7 +392,7 @@ net.ipv4.neigh.default.unres_qlen = 10
 net.ipv4.neigh.default.unres_qlen_bytes = 131072
 
 #ARP缓存的过期时间（单位毫秒）
-net.ipv4.neigh.default.base_reachable_time_ms = 60000
+net.ipv4.neigh.default.base_reachable_time_ms = 120000
 
 #在把记录标记为不可达之前，用多播/广播方式解析地址的最大次数
 net.ipv4.neigh.default.mcast_solicit = 10
