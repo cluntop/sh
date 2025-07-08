@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="174"
+version_test="175"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -388,23 +388,23 @@ net.ipv4.icmp_echo_ignore_broadcasts = 1
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 
 # 控制未解析（unresolved）的邻居（neighbor）项队列长度。
-net.ipv4.neigh.default.unres_qlen = 10
-net.ipv4.neigh.default.unres_qlen_bytes = 131072
+# net.ipv4.neigh.default.unres_qlen = 10
+# net.ipv4.neigh.default.unres_qlen_bytes = 131072
 
 #ARP缓存的过期时间（单位毫秒）
 net.ipv4.neigh.default.base_reachable_time_ms = 120000
 
 #在把记录标记为不可达之前，用多播/广播方式解析地址的最大次数
-net.ipv4.neigh.default.mcast_solicit = 10
+# net.ipv4.neigh.default.mcast_solicit = 10
 
 # 重发一个ARP请求前等待毫秒数
-net.ipv4.neigh.default.retrans_time_ms = 2000
+# net.ipv4.neigh.default.retrans_time_ms = 2000
 
 # 作用：收到dupACK时要去检查tcp stream
 net.ipv4.tcp_thin_dupack = 1
 
 # 作用：重传超时后要去检查tcp stream
-net.ipv4.tcp_thin_linear_timeouts = 1
+net.ipv4.tcp_thin_linear_timeouts = 0
 
 # TCP Pacing Rate 调整参数（BBR 专用）
 net.ipv4.tcp_pacing_ca_ratio = 110
