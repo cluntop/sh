@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="175"
+version_test="176"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -293,7 +293,7 @@ net.ipv4.tcp_keepalive_time = 900
 net.ipv4.tcp_keepalive_probes = 5
 
 # 缩短 tcp keepalive 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl =  3
+net.ipv4.tcp_keepalive_intvl = 15
 
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
