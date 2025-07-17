@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="176"
+version_test="177"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -170,8 +170,8 @@ net.core.optmem_max = 262144
 # 缓冲区相关配置均和内存相关 # 6291456
 net.ipv4.tcp_rmem = 8192 250000 536870912
 net.ipv4.tcp_wmem = 4096 65536 536870912
-net.ipv4.tcp_adv_win_scale = -2
 net.ipv4.ip_local_port_range = 1024 65536
+net.ipv4.tcp_adv_win_scale = -2
 
 # 半连接队列大小（SYN 队列）
 net.ipv4.tcp_max_syn_backlog = 350000
@@ -247,13 +247,13 @@ net.ipv4.conf.all.rp_filter = 1
 
 # 减少处于 FIN-WAIT-2
 # 连接状态的时间使系统可以处理更多的连接
-net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_fin_timeout = 120
 
 # unix socket 最大队列
-net.unix.max_dgram_qlen = 100
+net.unix.max_dgram_qlen = 65536
 
 # 路由缓存刷新频率
-net.ipv4.route.gc_timeout = 100
+net.ipv4.route.gc_timeout = 12000
 
 # 它用于控制是否忽略所有的ICMP Echo请求
 net.ipv4.icmp_echo_ignore_all = 1
@@ -290,10 +290,10 @@ net.ipv4.conf.default.accept_source_route = 0
 net.ipv4.tcp_keepalive_time = 900
 
 # 最大失败次数, 超过此值后将通知应用层连接失效
-net.ipv4.tcp_keepalive_probes = 5
+net.ipv4.tcp_keepalive_probes = 9
 
 # 缩短 tcp keepalive 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl = 15
+net.ipv4.tcp_keepalive_intvl = 60
 
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
@@ -429,6 +429,19 @@ kernel.perf_event_paranoid = 3
 kernel.yama.ptrace_scope = 1
 # vm.mmap_min_addr = 65536
 # vm.mmap_min_addr = 16384
+
+kernel.sched_cfs_bandwidth_slice_us = 5000
+kernel.sched_child_runs_first = 0
+kernel.sched_latency_ns = 12000000
+kernel.sched_migration_cost_ns = 1000000
+kernel.sched_min_granularity_ns = 2000000
+kernel.sched_nr_migrate = 64
+kernel.sched_rr_timeslice_ms = 100
+kernel.sched_rt_period_us = 1000000
+kernel.sched_rt_runtime_us = 900000
+kernel.sched_schedstats = 0
+kernel.sched_tunable_scaling = 1
+kernel.sched_wakeup_granularity_ns = 3000000
 
 EOF
 
