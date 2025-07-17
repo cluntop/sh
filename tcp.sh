@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="177"
+version_test="178"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -156,12 +156,12 @@ net.ipv4.tcp_early_retrans = 1
 
 # 全局套接字默认接受缓冲区
 # 212992 # 212992 #26214400
-net.core.rmem_default = 2621440
+net.core.rmem_default = 87380
 net.core.rmem_max = 536870912
 
 # 全局套接字默认发送缓冲区
 # 212992 # 212992 #26214400
-# net.core.wmem_default = 65536
+net.core.wmem_default = 65536
 net.core.wmem_max = 536870912
 
 # 控制单个套接字（socket）
@@ -170,7 +170,7 @@ net.core.optmem_max = 262144
 # 缓冲区相关配置均和内存相关 # 6291456
 net.ipv4.tcp_rmem = 8192 250000 536870912
 net.ipv4.tcp_wmem = 4096 65536 536870912
-net.ipv4.ip_local_port_range = 1024 65536
+net.ipv4.ip_local_port_range = 1024 65535
 net.ipv4.tcp_adv_win_scale = -2
 
 # 半连接队列大小（SYN 队列）
@@ -253,10 +253,12 @@ net.ipv4.tcp_fin_timeout = 120
 net.unix.max_dgram_qlen = 65536
 
 # 路由缓存刷新频率
-net.ipv4.route.gc_timeout = 12000
+net.ipv4.route.gc_timeout = 100
 
 # 它用于控制是否忽略所有的ICMP Echo请求
 net.ipv4.icmp_echo_ignore_all = 1
+
+# 取消对广播 ICMP 包的回应
 net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # TCP基础最大报文段大小 MSS
@@ -305,13 +307,22 @@ net.ipv4.tcp_orphan_retries = 1
 # arp_table的缓存限制优化
 net.ipv4.neigh.default.gc_stale_time = 120
 net.ipv6.neigh.default.gc_stale_time = 120
+
+net.ipv4.neigh.default.gc_thresh3 = 8192
+net.ipv4.neigh.default.gc_thresh2 = 4096
+net.ipv4.neigh.default.gc_thresh1 = 1024
+
+net.ipv6.neigh.default.gc_thresh3 = 8192
+net.ipv6.neigh.default.gc_thresh2 = 4096
+net.ipv6.neigh.default.gc_thresh1 = 1024
+
 net.ipv4.conf.default.arp_announce = 2
 net.ipv4.conf.all.arp_announce = 2
 # net.ipv4.conf.lo.arp_announce = 2
 
 # 用于控制系统在响应 ARP 请求时的行为。
-net.ipv4.conf.all.arp_ignore = 1
 net.ipv4.conf.default.arp_ignore = 1
+net.ipv4.conf.all.arp_ignore = 1
 
 # 取消注释以下内容以停止控制台上的低级消息
 kernel.printk = 3 4 1 3
@@ -325,13 +336,9 @@ vm.dirty_background_ratio = 5
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
 # vm.min_free_kbytes = 0
 
-# 该值高于100, 则将导致内核倾向于回收directory和inode cache
-# vm.vfs_cache_pressure = 80
-# 表示系统进行交换行为的程度, 数值（0-100）越高, 越可能发生磁盘交换
-vm.swappiness = 10
-
 # 仅用10%做为系统cache
 vm.dirty_ratio = 10
+vm.swappiness = 10
 vm.overcommit_memory = 1
 vm.overcommit_ratio = 80
 
@@ -361,7 +368,7 @@ vm.zone_reclaim_mode = 0
 
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
-net.ipv4.tcp_fastopen_blackhole_timeout_sec = 0
+net.ipv4.tcp_fastopen_blackhole_timeout_sec = 1
 
 # TCP 流中重排序的数据报最大数量
 net.ipv4.tcp_reordering = 5
@@ -380,9 +387,6 @@ net.ipv4.tcp_tso_win_divisor = 3
 
 # 控制 TCP 协议在处理 TIME-WAIT 状态时的行为
 net.ipv4.tcp_rfc1337 = 0
-
-# 取消对广播 ICMP 包的回应
-net.ipv4.icmp_echo_ignore_broadcasts = 1
 
 # 开启恶意 ICMP 错误消息保护
 net.ipv4.icmp_ignore_bogus_error_responses = 1
