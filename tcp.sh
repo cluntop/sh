@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="180"
+version_test="181"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -187,7 +187,7 @@ net.ipv4.tcp_abort_on_overflow = 0
 
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 70000
-net.core.netdev_budget_usecs = 1000
+net.core.netdev_budget_usecs = 2400
 
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
@@ -377,10 +377,10 @@ vm.zone_reclaim_mode = 0
 
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
-net.ipv4.tcp_fastopen_blackhole_timeout_sec = 15
+net.ipv4.tcp_fastopen_blackhole_timeout_sec = 300
 
 # TCP 流中重排序的数据报最大数量
-net.ipv4.tcp_reordering = 5
+net.ipv4.tcp_reordering = 16
 
 # 控制 TCP 协议在重传数据时的行为。
 net.ipv4.tcp_retrans_collapse = 0
@@ -392,7 +392,7 @@ net.ipv4.tcp_autocorking = 0
 net.ipv4.tcp_moderate_rcvbuf = 1
 
 # 单个TSO段可消耗拥塞窗口的比例, 默认值为 3
-net.ipv4.tcp_tso_win_divisor = 3
+net.ipv4.tcp_tso_win_divisor = 8
 
 # 控制 TCP 协议在处理 TIME-WAIT 状态时的行为
 net.ipv4.tcp_rfc1337 = 0
