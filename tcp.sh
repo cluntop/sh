@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="181"
+version_test="182"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -143,10 +143,10 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 net.ipv4.tcp_shrink_window = 1
 
 # 设置 TCP 接收缓冲区内存合并的最大字节数阈值
-net.ipv4.tcp_collapse_max_bytes = 6291456
+# net.ipv4.tcp_collapse_max_bytes = 6291456
 
 # 设置 TCP 发送缓冲区中“未发送数据量”的低水位阈值
-net.ipv4.tcp_notsent_lowat = 131072
+# net.ipv4.tcp_notsent_lowat = 131072
 
 # 允许路由本地环回网络的流量
 net.ipv4.conf.all.route_localnet = 1
@@ -187,7 +187,7 @@ net.ipv4.tcp_abort_on_overflow = 0
 
 # 所有网卡每次软中断最多处理的总帧数量
 net.core.netdev_budget = 70000
-net.core.netdev_budget_usecs = 2400
+net.core.netdev_budget_usecs = 1000
 
 # TCP 自动窗口
 # 要支持超过 64KB 的 TCP 窗口必须启用
