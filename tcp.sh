@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="186"
+version_test="187"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -27,10 +27,10 @@ udp_low=$(echo "$size_mb * 1024 / 30" | bc)
 udp_mid=$(echo "$size_mb * 1024 / 14" | bc)
 udp_high=$(echo "$size_mb * 1024 / 6" | bc)
 
-conntrack_max=$(echo "$size_mb * 65536 / 4" | bc)
+conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
-tcp_dy=$(echo "$tcp_dyjs * 16 / 2" | bc)
+tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 
 break_end() {
     echo "操作完成"
@@ -153,7 +153,7 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.conf.all.route_localnet = 1
 
 # 启用 TCP 的早期重传机制
-net.ipv4.tcp_early_retrans = 1
+net.ipv4.tcp_early_retrans = 3
 
 # 全局套接字默认接受缓冲区
 # 212992 # 212992 #26214400
@@ -200,7 +200,7 @@ net.ipv4.tcp_slow_start_after_idle = 0
 # nf_conntrack 调优
 net.nf_conntrack_max = $conntrack_max
 net.netfilter.nf_conntrack_max = $conntrack_max
-net.netfilter.nf_conntrack_buckets = 655360
+# net.netfilter.nf_conntrack_buckets = 655360
 net.netfilter.nf_conntrack_tcp_timeout_fin_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_time_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
@@ -222,7 +222,7 @@ net.ipv4.tcp_sack = 1
 net.ipv4.tcp_fack = 1
 
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 0
+net.ipv4.tcp_frto = 2
 
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
@@ -269,7 +269,7 @@ net.ipv4.icmp_errors_use_inbound_ifaddr = 1
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 
 # TCP基础最大报文段大小 MSS
-net.ipv4.tcp_base_mss = 1460
+net.ipv4.tcp_base_mss = 1360
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
 net.ipv4.tcp_mtu_probing = 1
@@ -279,7 +279,7 @@ net.ipv4.tcp_mtu_probing = 1
 net.ipv4.tcp_no_metrics_save = 1
 
 # 控制 TCP 初始拥塞窗口的大小
-net.ipv4.tcp_init_cwnd = 96
+net.ipv4.tcp_init_cwnd = 32
 
 # 控制 TCP 紧急指针的解释方式
 net.ipv4.tcp_stdurg = 0
@@ -296,13 +296,13 @@ net.ipv4.conf.all.accept_source_route = 0
 net.ipv4.conf.default.accept_source_route = 0
 
 # TCP KeepAlive 调优 # 最大闲置时间
-net.ipv4.tcp_keepalive_time = 900
+net.ipv4.tcp_keepalive_time = 600
 
 # 最大失败次数, 超过此值后将通知应用层连接失效
-net.ipv4.tcp_keepalive_probes = 9
+net.ipv4.tcp_keepalive_probes = 5
 
 # 缩短 tcp keepalive 发送探测包的时间间隔
-net.ipv4.tcp_keepalive_intvl = 60
+net.ipv4.tcp_keepalive_intvl = 15
 
 # 参数规定了在系统尝试清除这些孤儿连接之前可以重试的次数。
 net.ipv4.tcp_orphan_retries = 1
@@ -378,7 +378,7 @@ vm.zone_reclaim_mode = 0
 
 # TCP FastOpen
 net.ipv4.tcp_fastopen = 3
-net.ipv4.tcp_fastopen_blackhole_timeout_sec = 300
+net.ipv4.tcp_fastopen_blackhole_timeout_sec = 15
 
 # TCP 流中重排序的数据报最大数量
 net.ipv4.tcp_reordering = 16
