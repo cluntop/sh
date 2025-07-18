@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="183"
+version_test="184"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -148,7 +148,7 @@ net.ipv4.tcp_collapse_max_bytes = 0
 
 # 设置 TCP 发送缓冲区中“未发送数据量”的低水位阈值
 # 131072
-net.ipv4.tcp_notsent_lowat = 0
+# net.ipv4.tcp_notsent_lowat = 131072
 
 # 允许路由本地环回网络的流量
 net.ipv4.conf.all.route_localnet = 1
