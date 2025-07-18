@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="179"
+version_test="180"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -168,8 +168,8 @@ net.core.wmem_max = 536870912
 net.core.optmem_max = 262144
 
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 65536 262144 536870912
-net.ipv4.tcp_wmem = 65536 262144 536870912
+net.ipv4.tcp_rmem = 65536 699040 536870912
+net.ipv4.tcp_wmem = 65536 524288 536870912
 net.ipv4.ip_local_port_range = 1024 65535
 net.ipv4.tcp_adv_win_scale = -2
 
