@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="187"
+version_test="188"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -19,13 +19,13 @@ cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-tcp_low=$(echo "$size_mb * 1024 / 32" | bc)
-tcp_mid=$(echo "$size_mb * 1024 / 16" | bc)
-tcp_high=$(echo "$size_mb * 1024 / 8" | bc)
+tcp_low=$(echo "$size_mb * 16" | bc)
+tcp_mid=$(echo "$size_mb * 32" | bc)
+tcp_high=$(echo "$size_mb * 48" | bc)
 
-udp_low=$(echo "$size_mb * 1024 / 30" | bc)
-udp_mid=$(echo "$size_mb * 1024 / 14" | bc)
-udp_high=$(echo "$size_mb * 1024 / 6" | bc)
+udp_low=$(echo "$size_mb * 18" | bc)
+udp_mid=$(echo "$size_mb * 36" | bc)
+udp_high=$(echo "$size_mb * 54" | bc)
 
 conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 
@@ -114,12 +114,17 @@ sysctl_p() {
 sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
 }
+
 Install_bbr() {
 wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" && chmod +x tcpx.sh && ./tcpx.sh
 }
 
 kejilion_sh() {
 curl -s -O https://gh.clun.top/raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+}
+
+radical_sh() {
+bash <(curl -Ls https://raw.githubusercontent.com/Shellgate/tcp_optimization_bbr/main/bbr.sh)
 }
 
 Install_All() {
@@ -136,6 +141,9 @@ net.core.default_qdisc=fq_pie
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
+net.ipv4.tcp_min_snd_mss = 48
+net.ipv4.tcp_min_tso_segs = 2
+
 # vm.max_map_count = 262144
 # vm.nr_hugepages = $tcp_dy
 
@@ -144,7 +152,7 @@ net.ipv4.tcp_shrink_window = 1
 
 # 设置 TCP 接收缓冲区内存合并的最大字节数阈值
 # 6291456
-net.ipv4.tcp_collapse_max_bytes = 0
+# net.ipv4.tcp_collapse_max_bytes = 0
 
 # 设置 TCP 发送缓冲区中“未发送数据量”的低水位阈值
 # net.ipv4.tcp_notsent_lowat = 131072
@@ -153,7 +161,7 @@ net.ipv4.tcp_collapse_max_bytes = 0
 net.ipv4.conf.all.route_localnet = 1
 
 # 启用 TCP 的早期重传机制
-net.ipv4.tcp_early_retrans = 3
+net.ipv4.tcp_early_retrans = 2
 
 # 全局套接字默认接受缓冲区
 # 212992 # 212992 #26214400
@@ -169,8 +177,8 @@ net.core.wmem_max = 536870912
 net.core.optmem_max = 262144
 
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 65536 699040 536870912
-net.ipv4.tcp_wmem = 65536 524288 536870912
+net.ipv4.tcp_rmem = 16384 699040 536870912
+net.ipv4.tcp_wmem = 16384 524288 536870912
 net.ipv4.ip_local_port_range = 1024 65535
 net.ipv4.tcp_adv_win_scale = -2
 
@@ -207,7 +215,7 @@ net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_established = 180
 
 # 只对客户端生效, 服务器连接上游时也认为是客户端
-net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_tw_reuse = 0
 
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
@@ -222,7 +230,7 @@ net.ipv4.tcp_sack = 1
 net.ipv4.tcp_fack = 1
 
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 2
+net.ipv4.tcp_frto = 3
 
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
@@ -236,7 +244,7 @@ net.ipv4.tcp_syn_retries = 4
 net.ipv4.tcp_retries1 = 5
 
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
-net.ipv4.tcp_retries2 = 8
+net.ipv4.tcp_retries2 = 15
 
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
@@ -269,11 +277,17 @@ net.ipv4.icmp_errors_use_inbound_ifaddr = 1
 net.ipv4.icmp_ignore_bogus_error_responses = 1
 
 # TCP基础最大报文段大小 MSS
-net.ipv4.tcp_base_mss = 1360
+net.ipv4.tcp_base_mss = 1460
+
+net.ipv4.route.min_pmtu = 552
+net.ipv4.route.mtu_expires = 100
+net.ipv4.route.redirect_number = 20
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
-net.ipv4.tcp_mtu_probing = 1
-# net.ipv4.tcp_mtu_probe_floor = 576
+net.ipv4.tcp_mtu_probing = 0
+net.ipv4.tcp_mtu_probe_floor = 48
+
+net.ipv4.route.min_adv_mss = 536
 
 # 控制是否保存 TCP 连接的度量值到路由缓存中
 net.ipv4.tcp_no_metrics_save = 1
@@ -418,7 +432,8 @@ net.ipv4.tcp_thin_dupack = 1
 net.ipv4.tcp_thin_linear_timeouts = 0
 
 # TCP Pacing Rate 调整参数（BBR 专用）
-net.ipv4.tcp_pacing_ca_ratio = 110
+net.ipv4.tcp_pacing_ca_ratio = 120
+net.ipv4.tcp_pacing_ss_ratio = 200
 
 # 作用：UDP队列里数据报的最大个数
 net.unix.max_dgram_qlen = 1024
@@ -487,7 +502,7 @@ while true; do
     echo "5. 优化TCP 6. 优化UDP"
     echo "---"
     echo "7. 清理垃圾 8. 命令参考"
-    echo "9. 安装内核"
+    echo "9. 安装内核 10. 激进内核"
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -504,6 +519,7 @@ while true; do
       7) cleaning_trash ;;
       8) tcp_info ;;
       9) Install_bbr ;;
+      10) radical_sh ;;
       000) kejilion_sh ;;
       00) update_script ;;
       0) clear ; exit ;;
