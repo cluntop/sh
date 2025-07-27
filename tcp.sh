@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="191"
+version_test="192"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -143,6 +143,10 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 
 net.ipv4.tcp_min_snd_mss = 48
 net.ipv4.tcp_min_tso_segs = 2
+
+net.ipv4.tcp_plb_cong_thresh = 10
+net.ipv4.tcp_plb_enabled = 1
+net.ipv4.tcp_plb_suspend_rto_sec = 3
 
 # vm.max_map_count = 262144
 # vm.nr_hugepages = $tcp_dy
@@ -382,8 +386,8 @@ kernel.panic = 0
 # 优化 CPU 设置
 kernel.sched_autogroup_enabled = 0
 
-# IPv4 TCP 低延迟参数
-net.ipv4.tcp_low_latency = 1
+# IPv4 TCP 低延迟参数 严禁开启
+net.ipv4.tcp_low_latency = 0
 # 禁用 NUMA balancing
 kernel.numa_balancing = 0
 
