@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="190"
+version_test="191"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -135,7 +135,7 @@ Install_sysctl() {
 
 cat >/etc/sysctl.conf<<EOF
 
-net.ipv4.tcp_congestion_contro l= bbr
+net.ipv4.tcp_congestion_control= bbr
 net.core.default_qdisc = fq_codel
 
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
