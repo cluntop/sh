@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="188"
+version_test="189"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -135,8 +135,8 @@ Install_sysctl() {
 
 cat >/etc/sysctl.conf<<EOF
 
-net.ipv4.tcp_congestion_control=bbr
-net.core.default_qdisc=fq_pie
+net.ipv4.tcp_congestion_contro l= bbr
+net.core.default_qdisc = fq_codel
 
 net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high
 net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
@@ -186,7 +186,7 @@ net.ipv4.tcp_adv_win_scale = -2
 net.ipv4.tcp_max_syn_backlog = 250000
 
 # 网卡接收队列大小（所有协议数据包）
-net.core.netdev_max_backlog = 131072
+net.core.netdev_max_backlog = 16384
 
 # 全连接队列大小（Accept 队列）
 net.core.somaxconn = 65536
@@ -215,7 +215,7 @@ net.netfilter.nf_conntrack_tcp_timeout_close_wait = 30
 net.netfilter.nf_conntrack_tcp_timeout_established = 180
 
 # 只对客户端生效, 服务器连接上游时也认为是客户端
-net.ipv4.tcp_tw_reuse = 0
+net.ipv4.tcp_tw_reuse = 1
 
 # 系统同时保持TIME_WAIT套接字的最大数量
 # 如果超过这个数字 TIME_WAIT 套接字将立刻被清除
@@ -352,14 +352,14 @@ kernel.printk = 3 4 1 3
 kernel.core_pattern = core_%e
 
 # 控制内存“脏数据”（dirty data）积累的后台内存比例。
-vm.dirty_background_ratio = 5
+vm.dirty_background_ratio = 2
 
 # 表示强制Linux VM最低保留多少空闲内存（Kbytes）
 # vm.min_free_kbytes = 0
 
 # 仅用10%做为系统cache
-vm.dirty_ratio = 10
-vm.swappiness = 10
+vm.dirty_ratio = 5
+vm.swappiness = 5
 vm.overcommit_memory = 1
 vm.overcommit_ratio = 80
 
