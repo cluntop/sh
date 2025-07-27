@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="192"
+version_test="193"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -144,7 +144,7 @@ net.ipv4.udp_mem = $udp_low $udp_mid $udp_high
 net.ipv4.tcp_min_snd_mss = 48
 net.ipv4.tcp_min_tso_segs = 2
 
-net.ipv4.tcp_plb_cong_thresh = 10
+net.ipv4.tcp_plb_cong_thresh = 5
 net.ipv4.tcp_plb_enabled = 1
 net.ipv4.tcp_plb_suspend_rto_sec = 3
 
