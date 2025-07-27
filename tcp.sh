@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="189"
+version_test="190"
 
 RED='\033[31m'
 GREEN='\033[32m'
