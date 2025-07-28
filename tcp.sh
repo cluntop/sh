@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="195"
+version_test="196"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -234,7 +234,7 @@ net.ipv4.tcp_sack = 1
 net.ipv4.tcp_fack = 1
 
 # 开启F-RTO(针对TCP重传超时的增强的恢复算法).
-net.ipv4.tcp_frto = 3
+net.ipv4.tcp_frto = 2
 
 # 是一种用于在IP网络中传递拥塞信息的机制。
 net.ipv4.tcp_ecn = 0
@@ -248,7 +248,7 @@ net.ipv4.tcp_syn_retries = 4
 net.ipv4.tcp_retries1 = 5
 
 # 在丢弃激活(已建立通讯状况)的 TCP 连接之前, 需要进行多少次重试
-net.ipv4.tcp_retries2 = 15
+net.ipv4.tcp_retries2 = 8
 
 # 开启 SYN 洪水攻击保护
 net.ipv4.tcp_syncookies = 0
@@ -283,16 +283,16 @@ net.ipv4.icmp_ignore_bogus_error_responses = 1
 # TCP基础最大报文段大小 MSS
 net.ipv4.tcp_base_mss = 1460
 
-net.ipv4.route.min_pmtu = 9536
-net.ipv4.route.mtu_expires = 300
-net.ipv6.route.mtu_expires = 300
+net.ipv4.route.min_pmtu = 9000
+net.ipv4.route.mtu_expires = 100
+net.ipv6.route.mtu_expires = 100
 net.ipv4.route.redirect_number = 20
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
 net.ipv4.tcp_mtu_probing = 1
-net.ipv4.tcp_mtu_probe_floor = 1536
+net.ipv4.tcp_mtu_probe_floor = 1500
 
-net.ipv4.route.min_adv_mss = 9000
+net.ipv4.route.min_adv_mss = 1500
 
 # 控制是否保存 TCP 连接的度量值到路由缓存中
 net.ipv4.tcp_no_metrics_save = 1
