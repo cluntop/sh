@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.8"
-version_test="201"
+version_test="202"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -22,6 +22,8 @@ sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
 cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 
+PAGE_SIZE=$(getconf PAGESIZE)
+
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
 tcp_low=$(echo "$size_mb * 16" | bc)
@@ -31,6 +33,19 @@ tcp_high=$(echo "$size_mb * 48" | bc)
 udp_low=$(echo "$size_mb * 18" | bc)
 udp_mid=$(echo "$size_mb * 36" | bc)
 udp_high=$(echo "$size_mb * 54" | bc)
+
+
+TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+
+# TCP 内存计算
+TCP_LOW=$((TOTAL_MEM * 2 / 3 / PAGE_SIZE))
+TCP_THRESH=$((TOTAL_MEM * 3 / 4 / PAGE_SIZE))
+TCP_HIGH=$((TOTAL_MEM * 9 / 10 / PAGE_SIZE))
+
+# UDP 内存计算（TCP 60%）
+UDP_LOW=$((TCP_LOW * 6 / 10))
+UDP_THRESH=$((TCP_THRESH * 6 / 10))
+UDP_HIGH=$((TCP_HIGH * 6 / 10))
 
 conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 
@@ -176,6 +191,9 @@ if [ ! -f "$file_sysctl" ]; then
 else
     echo "99-sysctl.conf 文件存在，不执行 ln"
 fi
+
+sysctl -w net.ipv4.tcp_mem="$TCP_LOW $TCP_THRESH $TCP_HIGH"
+sysctl -w net.ipv4.udp_mem="$UDP_LOW $UDP_THRESH $UDP_HIGH"
 
 ip tcp_metrics flush all > /dev/null 2>&1
 
