@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="193"
+version_test="194"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -181,8 +181,8 @@ net.core.wmem_max = 536870912
 net.core.optmem_max = 262144
 
 # 缓冲区相关配置均和内存相关 # 6291456
-net.ipv4.tcp_rmem = 16384 699040 536870912
-net.ipv4.tcp_wmem = 16384 524288 536870912
+net.ipv4.tcp_rmem = 65536 699040 536870912
+net.ipv4.tcp_wmem = 65536 524288 536870912
 net.ipv4.ip_local_port_range = 1024 65535
 net.ipv4.tcp_adv_win_scale = -2
 
@@ -283,13 +283,14 @@ net.ipv4.icmp_ignore_bogus_error_responses = 1
 # TCP基础最大报文段大小 MSS
 net.ipv4.tcp_base_mss = 1460
 
-net.ipv4.route.min_pmtu = 552
+net.ipv4.route.min_pmtu = 9552
 net.ipv4.route.mtu_expires = 100
+net.ipv6.route.mtu_expires = 100
 net.ipv4.route.redirect_number = 20
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
-net.ipv4.tcp_mtu_probing = 0
-net.ipv4.tcp_mtu_probe_floor = 48
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_mtu_probe_floor = 1552
 
 net.ipv4.route.min_adv_mss = 536
 
