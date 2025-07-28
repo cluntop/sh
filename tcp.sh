@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="194"
+version_test="195"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -283,16 +283,16 @@ net.ipv4.icmp_ignore_bogus_error_responses = 1
 # TCP基础最大报文段大小 MSS
 net.ipv4.tcp_base_mss = 1460
 
-net.ipv4.route.min_pmtu = 9552
-net.ipv4.route.mtu_expires = 100
-net.ipv6.route.mtu_expires = 100
+net.ipv4.route.min_pmtu = 9536
+net.ipv4.route.mtu_expires = 300
+net.ipv6.route.mtu_expires = 300
 net.ipv4.route.redirect_number = 20
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
 net.ipv4.tcp_mtu_probing = 1
-net.ipv4.tcp_mtu_probe_floor = 1552
+net.ipv4.tcp_mtu_probe_floor = 1536
 
-net.ipv4.route.min_adv_mss = 536
+net.ipv4.route.min_adv_mss = 9000
 
 # 控制是否保存 TCP 连接的度量值到路由缓存中
 net.ipv4.tcp_no_metrics_save = 1
