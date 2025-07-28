@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.7"
-version_test="196"
+version_test="197"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -290,9 +290,9 @@ net.ipv4.route.redirect_number = 20
 
 # 启用 MTU 探测，在链路上存在 ICMP 黑洞时候有用
 net.ipv4.tcp_mtu_probing = 1
-net.ipv4.tcp_mtu_probe_floor = 1500
+net.ipv4.tcp_mtu_probe_floor = 9020
 
-net.ipv4.route.min_adv_mss = 1500
+net.ipv4.route.min_adv_mss = 8960
 
 # 控制是否保存 TCP 连接的度量值到路由缓存中
 net.ipv4.tcp_no_metrics_save = 1
