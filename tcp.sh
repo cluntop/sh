@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.8"
-version_test="200"
+version_test="201"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -142,7 +142,7 @@ Install_sysctl() {
 cp "$sysctl_conf" "$backup_bak"
 echo -e "${GREEN}✓ 备份已保存至 $backup_bak${RESET}"
 
-curl -s -o "$tmp_new" "$SYSCTL_URL"
+curl -s -o "$tmp_new" "$sysctl_url"
 
 if [[ $? -ne 0 ]]; then
     echo -e "${RED}✗ 下载配置文件失败.${RESET}"
