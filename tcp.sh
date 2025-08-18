@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.1.8"
-version_test="203"
+version="1.1.9"
+version_test="204"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -130,6 +130,12 @@ cleaning_trash() {
 curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/refs/heads/main/trash.sh && chmod +x trash.sh && ./trash.sh
 }
 
+ethtool_sh() {
+ ethtool -K eth0 tx-checksumming on rx-checksumming on
+ ethtool -K eth0 tso on ufo on
+ ethtool -K eth0 rxvlan on
+}
+
 sysctl_p() {
 sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
@@ -140,7 +146,12 @@ wget -O tcpx.sh "https://github.com/ylx2016/Linux-NetSpeed/raw/master/tcpx.sh" &
 }
 
 kejilion_sh() {
-curl -s -O https://gh.clun.top/raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+curl -s -O https://raw.githubusercontent.com/kejilion/sh/main/kejilion.sh && chmod +x kejilion.sh && ./kejilion.sh
+}
+
+
+joey_install() {
+bash <(curl -l -s https://raw.githubusercontent.com/byJoey/Actions-bbr-v3/refs/heads/main/install.sh)
 }
 
 radical_sh() {
@@ -148,7 +159,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/Shellgate/tcp_optimization_bbr
 }
 
 Install_All() {
-Install_limits; Install_systemd; Install_sysctl; calculate_tcp; calculate_udp;
+Install_limits; Install_systemd; Install_sysctl; calculate_tcp; calculate_udp; ethtool_sh; joey_install;
 }
 
 Install_sysctl() {
@@ -224,6 +235,7 @@ while true; do
     echo "---"
     echo "7. 清理垃圾 8. 命令参考"
     echo "9. 安装内核 10. 激进内核"
+    echo "11. 优化网卡 12. 内核脚本"
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -239,10 +251,12 @@ while true; do
       6) calculate_udp ; sysctl_p ; clun_tcp ;;
       7) cleaning_trash : clear ; exit ;;
       8) tcp_info ;;
-      9) Install_bbr : clear ; exit ;;
-      10) radical_sh : clear ; exit ;;
-      000) kejilion_sh : clear ; exit ;;
-      00) update_script : clear ; exit ;;
+      9) Install_bbr ; clear ; exit ;;
+      10) radical_sh ; clear ; exit ;;
+      11) ethtool_sh ; clear ; exit ;;
+      12) joey_install ; clear ; exit ;;
+      000) kejilion_sh ; clear ; exit ;;
+      00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
       *) echo "无效的输入!" ;;
     esac
