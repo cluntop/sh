@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="204"
+version_test="205"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -51,6 +51,10 @@ conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
+
+nic_list() {
+    ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}'
+}
 
 break_end() {
     # echo "操作完成"
@@ -131,9 +135,18 @@ curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/refs/heads/main
 }
 
 ethtool_sh() {
- ethtool -K eth0 tx-checksumming on rx-checksumming on
- ethtool -K eth0 tso on ufo on
- ethtool -K eth0 rxvlan on
+ local nic=$1
+
+ ethtool -K $nic tx-checksumming on rx-checksumming on
+ ethtool -K $nic tso on ufo on
+ ethtool -K $nic rxvlan on
+
+ local nics=$(nic_list)
+
+ for nic in $nics; do
+  ethtool_sh $nic
+ done
+
 }
 
 sysctl_p() {
