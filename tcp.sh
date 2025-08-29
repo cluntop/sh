@@ -87,20 +87,20 @@ fi
 
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
-* soft     nproc          1024000
-* hard     nproc          1024000
-* soft     nofile         1024000
-* hard     nofile         1024000
+* soft     nproc          2097152
+* hard     nproc          2097152
+* soft     nofile         2097152
+* hard     nofile         2097152
 
-root soft     nproc          1024000
-root hard     nproc          1024000
-root soft     nofile         1024000
-root hard     nofile         1024000
+root soft     nproc          2097152
+root hard     nproc          2097152
+root soft     nofile         2097152
+root hard     nofile         2097152
 
-bro soft     nproc          1024000
-bro hard     nproc          1024000
-bro soft     nofile         1024000
-bro hard     nofile         1024000
+bro soft     nproc          2097152
+bro hard     nproc          2097152
+bro soft     nofile         2097152
+bro hard     nofile         2097152
 EOF
 }
 
