@@ -120,14 +120,8 @@ else
     echo "session required pam_limits.so" >> /etc/pam.d/common-session
 fi
 
-}
+echo never >/sys/kernel/mm/transparent_hugepage/enabled
 
-calculate_tcp() {
-sed -i "s/#*net.ipv4.tcp_mem.*/net.ipv4.tcp_mem = $tcp_low $tcp_mid $tcp_high/" /etc/sysctl.conf
-}
-
-calculate_udp() {
-sed -i "s/#*net.ipv4.udp_mem =.*/net.ipv4.udp_mem = $udp_low $udp_mid $udp_high/" /etc/sysctl.conf
 }
 
 cleaning_trash() {
@@ -172,7 +166,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/Shellgate/tcp_optimization_bbr
 }
 
 Install_All() {
-Install_limits; Install_systemd; Install_sysctl; calculate_tcp; calculate_udp; ethtool_sh; joey_install;
+Install_limits; Install_systemd; Install_sysctl; ethtool_sh; joey_install;
 }
 
 Install_sysctl() {
@@ -244,7 +238,6 @@ while true; do
     echo "---"
     echo "1. 优化全部 2. 优化限制"
     echo "3. 优化安全 4. 优化内核"
-    echo "5. 优化TCP 6. 优化UDP"
     echo "---"
     echo "7. 清理垃圾 8. 命令参考"
     echo "9. 安装内核 10. 激进内核"
@@ -260,8 +253,6 @@ while true; do
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl : clear ; exit ;;
-      5) calculate_tcp ; sysctl_p ; clun_tcp ;;
-      6) calculate_udp ; sysctl_p ; clun_tcp ;;
       7) cleaning_trash : clear ; exit ;;
       8) tcp_info ;;
       9) Install_bbr ; clear ; exit ;;
