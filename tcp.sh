@@ -52,6 +52,12 @@ conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 
+local nics=$(nic_list)
+
+for nic in $nics; do
+ ethtool_sh $nic
+done
+
 nic_list() {
     ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}'
 }
@@ -87,20 +93,20 @@ fi
 
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
-* soft     nproc          2097152
-* hard     nproc          2097152
-* soft     nofile         2097152
-* hard     nofile         2097152
+* soft     nproc          1024000
+* hard     nproc          1024000
+* soft     nofile         1024000
+* hard     nofile         1024000
 
-root soft     nproc          2097152
-root hard     nproc          2097152
-root soft     nofile         2097152
-root hard     nofile         2097152
+root soft     nproc          1024000
+root hard     nproc          1024000
+root soft     nofile         1024000
+root hard     nofile         1024000
 
-bro soft     nproc          2097152
-bro hard     nproc          2097152
-bro soft     nofile         2097152
-bro hard     nofile         2097152
+bro soft     nproc          1024000
+bro hard     nproc          1024000
+bro soft     nofile         1024000
+bro hard     nofile         1024000
 EOF
 }
 
@@ -135,17 +141,12 @@ ethtool_sh() {
  ethtool -K $nic tso on ufo on
  ethtool -K $nic rxvlan on
 
- local nics=$(nic_list)
-
- for nic in $nics; do
-  ethtool_sh $nic
- done
-
 }
 
 sysctl_p() {
 sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
+# echo "bbr" | sudo tee -a /etc/modules-load.d/modules.conf
 }
 
 Install_bbr() {
