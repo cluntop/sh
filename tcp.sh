@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="207"
+version_test="208"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -128,6 +128,10 @@ fi
 
 echo never >/sys/kernel/mm/transparent_hugepage/enabled
 
+sudo ip route change $(ip route show | grep '^default' | head -1) initcwnd 10 initrwnd 25
+
+sudo ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n1 -i sudo prlimit --pid {} --nofile=1048576
+
 }
 
 cleaning_trash() {
@@ -167,7 +171,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/Shellgate/tcp_optimization_bbr
 }
 
 Install_All() {
-Install_limits; Install_systemd; Install_sysctl; ethtool_sh; joey_install;
+Install_limits; Install_systemd; Install_sysctl; ethtool_sh;
 }
 
 Install_sysctl() {
