@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="206"
+version_test="207"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -52,15 +52,15 @@ conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 
+nic_list() {
+    ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}'
+}
+
 local nics=$(nic_list)
 
 for nic in $nics; do
  ethtool_sh $nic
 done
-
-nic_list() {
-    ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}'
-}
 
 break_end() {
     # echo "操作完成"
