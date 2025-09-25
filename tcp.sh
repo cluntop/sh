@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="208"
+version_test="209"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -131,6 +131,8 @@ echo never >/sys/kernel/mm/transparent_hugepage/enabled
 sudo ip route change $(ip route show | grep '^default' | head -1) initcwnd 10 initrwnd 25
 
 sudo ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n1 -i sudo prlimit --pid {} --nofile=1048576
+
+ip route change local 127.0.0.0/8 dev lo initrwnd 1000
 
 }
 
