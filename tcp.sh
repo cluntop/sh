@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="211"
+version_test="212"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -71,7 +71,7 @@ break_end() {
 }
 
 update_script() {
-local version_new=$(curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
+local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
 
 if [ "$version" = "$version_new" ]; then
     echo "你已经是最新版本！"
@@ -83,7 +83,7 @@ fi
     read -e -p "请输入你的选择: " choice
       case "$choice" in
       1)
-        curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh
+        curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh
         cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
         ;;
       *) clun_tcp ;;
@@ -144,7 +144,7 @@ fi
 }
 
 cleaning_trash() {
-curl -s https://gh.clun.top/raw.githubusercontent.com/cluntop/sh/refs/heads/main/trash.sh && chmod +x trash.sh && ./trash.sh
+sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s; sudo dpkg -l | grep '^rc' | awk '{print $2}' | sudo xargs dpkg --purge; sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge; docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; rm -rf ~/Downloads/*; rm -rf ~/.cache/thumbnails/*; rm -rf ~/.mozilla/firefox/*.default-release/cache2/*; sudo apt-get clean; dpkg --list | grep linux-image | grep -v `uname -r` | awk '{print $2}' | xargs sudo apt-get remove --purge -y
 }
 
 ethtool_sh() {
