@@ -3,13 +3,15 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="213"
+version_test="214"
 
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
 BLUE='\033[34m'
 RESET='\033[0m'
+
+nic_interface=$(ip addr | grep 'state UP' | awk '{print $2}' | sed 's/.$//')
 
 interfaces=$(nmcli device status | awk '{print $1}' | grep -v DEVICE)
 
