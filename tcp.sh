@@ -3,13 +3,15 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="212"
+version_test="213"
 
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
 BLUE='\033[34m'
 RESET='\033[0m'
+
+interfaces=$(nmcli device status | awk '{print $1}' | grep -v DEVICE)
 
 backup_bak="/etc/sysctl.conf.bak"
 tmp_new="/tmp/sysctl.new"
@@ -52,9 +54,7 @@ conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 
-nic_list() {
-    ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}'
-}
+nic_list=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
 
 local nics=$(nic_list)
 
