@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.1.9"
-version_test="214"
+version_test="215"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -143,6 +143,10 @@ fi
 
   ip route change local 127.0.0.0/8 dev lo initrwnd 1000
 
+  ethtool -G $nic_interface rx 2048
+  ethtool -L $nic_interface combined 4
+  # ethtool -C $nic_interface rx-usecs 10 tx-usecs 10
+
 }
 
 cleaning_trash() {
@@ -237,6 +241,18 @@ read -p "→ 现在重启系统吗? [y/N]: " confirm
 [[ "$confirm" =~ ^[Yy]$ ]] && reboot
 }
 
+lost_packet() {
+ethtool -S $nic_interface | grep -e rx_no_buffer_count -e rx_missed_errors -e rx_fifo_errors -e rx_over_errors
+}
+
+check_buffer() {
+ethtool -g $nic_interface
+}
+
+check_settings() {
+ethtool -c $nic_interface
+}
+
 tcp_info() {
 echo "---"
 echo "以下是命令参考用例："
@@ -258,6 +274,8 @@ while true; do
     echo "7. 清理垃圾 8. 命令参考"
     echo "9. 安装内核 10. 激进内核"
     echo "11. 优化网卡 12. 内核脚本"
+    echo "13. 丢失数据包 14. 检查缓冲"
+    echo "15. 检查当前设置 "
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -275,6 +293,9 @@ while true; do
       10) radical_sh ; clear ; exit ;;
       11) ethtool_sh ; clear ; exit ;;
       12) joey_install ; clear ; exit ;;
+      13) lost_packet ;;
+      14) check_buffer ;;
+      15) check_settings ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
