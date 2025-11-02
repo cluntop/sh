@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.1.9"
-version_test="215"
+version="1.2.0"
+version_test="216"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -137,9 +137,9 @@ fi
   test -e /sys/devices/system/cpu/intel_pstate/max_perf_pct && echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
   test -n "$(which auditctl)" && auditctl -a never,task >/dev/null 2>&1
 
-  sudo ip route change $(ip route show | grep '^default' | head -1) initcwnd 10 initrwnd 25
+  ip route change $(ip route show | grep '^default' | head -1) initcwnd 10 initrwnd 25
 
-  sudo ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n1 -i sudo prlimit --pid {} --nofile=1048576
+  ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n1 -i sudo prlimit --pid {} --nofile=1048576
 
   ip route change local 127.0.0.0/8 dev lo initrwnd 1000
 
