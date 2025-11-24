@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.0"
-version_test="216"
+version_test="217"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -59,10 +59,6 @@ tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 nic_list=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
 
 local nics=$(nic_list)
-
-for nic in $nics; do
- ethtool_sh $nic
-done
 
 break_end() {
     # echo "操作完成"
@@ -146,20 +142,12 @@ fi
   ethtool -G $nic_interface rx 2048
   ethtool -L $nic_interface combined 4
   # ethtool -C $nic_interface rx-usecs 10 tx-usecs 10
+  ethtool -K $nics tso on ufo on rxvlan on tx-checksumming on rx-checksumming on
 
 }
 
 cleaning_trash() {
 sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s; sudo dpkg -l | grep '^rc' | awk '{print $2}' | sudo xargs dpkg --purge; sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge; docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; rm -rf ~/Downloads/*; rm -rf ~/.cache/thumbnails/*; rm -rf ~/.mozilla/firefox/*.default-release/cache2/*; sudo apt-get clean; dpkg --list | grep linux-image | grep -v `uname -r` | awk '{print $2}' | xargs sudo apt-get remove --purge -y
-}
-
-ethtool_sh() {
- local nic=$1
-
- ethtool -K $nic tx-checksumming on rx-checksumming on
- ethtool -K $nic tso on ufo on
- ethtool -K $nic rxvlan on
-
 }
 
 sysctl_p() {
@@ -186,7 +174,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/Shellgate/tcp_optimization_bbr
 }
 
 Install_All() {
-Install_limits; Install_systemd; Install_sysctl; ethtool_sh;
+Install_limits; Install_systemd; Install_sysctl;
 }
 
 Install_sysctl() {
@@ -273,7 +261,7 @@ while true; do
     echo "---"
     echo "7. 清理垃圾 8. 命令参考"
     echo "9. 安装内核 10. 激进内核"
-    echo "11. 优化网卡 12. 内核脚本"
+    echo "11. XXX 12. 内核脚本"
     echo "13. 丢失数据包 14. 检查缓冲"
     echo "15. 检查当前设置 "
     echo "000. 科技 Lion 脚本工具箱"
@@ -291,7 +279,7 @@ while true; do
       8) tcp_info ;;
       9) Install_bbr ; clear ; exit ;;
       10) radical_sh ; clear ; exit ;;
-      11) ethtool_sh ; clear ; exit ;;
+      11)  clear ; exit ;;
       12) joey_install ; clear ; exit ;;
       13) lost_packet ;;
       14) check_buffer ;;
