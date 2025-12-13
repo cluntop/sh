@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.0"
-version_test="217"
+version_test="218"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -143,6 +143,8 @@ fi
   ethtool -L $nic_interface combined 4
   # ethtool -C $nic_interface rx-usecs 10 tx-usecs 10
   ethtool -K $nics tso on ufo on rxvlan on tx-checksumming on rx-checksumming on
+
+  sudo modprobe ip_conntrack
 
 }
 
