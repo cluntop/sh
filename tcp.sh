@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.2.0"
-version_test="218"
+version="1.2.1"
+version_test="219"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -155,7 +155,8 @@ sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journa
 sysctl_p() {
 sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
-# echo "bbr" | sudo tee -a /etc/modules-load.d/modules.conf
+sysctl -w net.ipv4.route.flush=1
+ip route flush cache
 }
 
 Install_bbr() {
