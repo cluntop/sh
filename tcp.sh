@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.2.1"
-version_test="219"
+version="1.2.2"
+version_test="220"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -52,6 +52,10 @@ UDP_THRESH=$((TCP_THRESH * 6 / 10))
 UDP_HIGH=$((TCP_HIGH * 6 / 10))
 
 conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
+
+DEFAULT_ROUTE=$(ip route show default | head -n 1)
+GATEWAY_IP=$(echo "$DEFAULT_ROUTE" | awk '{print $3}')
+INTERFACE=$(echo "$DEFAULT_ROUTE" | awk '{print $5}')
 
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
@@ -143,6 +147,8 @@ fi
   ethtool -L $nic_interface combined 4
   # ethtool -C $nic_interface rx-usecs 10 tx-usecs 10
   ethtool -K $nics tso on ufo on rxvlan on tx-checksumming on rx-checksumming on
+
+  ip route change default via "$GATEWAY_IP" dev "$INTERFACE" initrwnd 100
 
   sudo modprobe ip_conntrack
 
