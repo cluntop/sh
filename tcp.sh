@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.2"
-version_test="220"
+version_test="221"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -142,13 +142,12 @@ fi
   ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n1 -i sudo prlimit --pid {} --nofile=1048576
 
   ip route change local 127.0.0.0/8 dev lo initrwnd 1000
+  ip route change default via "$GATEWAY_IP" dev "$INTERFACE" initrwnd 1000
 
   ethtool -G $nic_interface rx 2048
   ethtool -L $nic_interface combined 4
   # ethtool -C $nic_interface rx-usecs 10 tx-usecs 10
   ethtool -K $nics tso on ufo on rxvlan on tx-checksumming on rx-checksumming on
-
-  ip route change default via "$GATEWAY_IP" dev "$INTERFACE" initrwnd 100
 
   sudo modprobe ip_conntrack
 
@@ -161,8 +160,8 @@ sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journa
 sysctl_p() {
 sysctl -p >/dev/null 2>&1
 sysctl --system >/dev/null 2>&1
-sysctl -w net.ipv4.route.flush=1
-ip route flush cache
+sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
+ip route flush cache >/dev/null 2>&1
 }
 
 Install_bbr() {
