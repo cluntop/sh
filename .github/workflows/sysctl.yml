@@ -42,6 +42,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes detected in kernel parameters."
           else
-            git commit -m "chore: update sysctl parameters dump [skip ci]"
+            git commit -m "Update sysctl.conf"
             git push
           fi
