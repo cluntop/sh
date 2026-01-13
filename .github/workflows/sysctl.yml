@@ -1,0 +1,47 @@
+name: Sysctl Dump Tool
+
+on:
+  workflow_dispatch:  # 允许手动触发
+  push:
+    branches:
+      - main          # 或者 master，根据你的主分支名称修改
+
+# 必须赋予写权限以便将文件推送回仓库
+permissions:
+  contents: write
+
+jobs:
+  extract-sysctl:
+    # 运行环境：通常是 Ubuntu 22.04 or 24.04 (LTS)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. 执行 sysctl -a 并保存
+      - name: Run sysctl and save to file
+        run: |
+          echo "Starting sysctl dump on $(date)"
+          # 使用 sudo 获取完整权限，ignore errors (|| true) 防止因个别受保护参数导致流程失败
+          sudo sysctl -a > sysctl.conf 2>&1 || true
+          echo "Dump complete."
+
+      # 3. 检查变动并提交
+      - name: Commit and Push changes
+        run: |
+          # 配置 git 用户身份 (GitHub Actions Bot)
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 添加文件
+          git add sysctl.conf
+          
+          # 仅当文件有变化时才提交，避免空提交导致报错
+          if git diff --staged --quiet; then
+            echo "No changes detected in kernel parameters."
+          else
+            git commit -m "chore: update sysctl parameters dump [skip ci]"
+            git push
+          fi
