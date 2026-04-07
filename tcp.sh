@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.2.2"
-version_test="221"
+version="1.2.3"
+version_test="222"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -128,7 +128,7 @@ else
     echo "session required pam_limits.so" >> /etc/pam.d/common-session
 fi
 
-  echo never >/sys/kernel/mm/transparent_hugepage/enabled
+  echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
   test -e /sys/devices/system/cpu/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor
   test -e /sys/devices/system/cpu/cpufreq/policy0/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/policy*/scaling_governor
   test -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
@@ -150,6 +150,10 @@ fi
   ethtool -K $nics tso on ufo on rxvlan on tx-checksumming on rx-checksumming on
 
   sudo modprobe ip_conntrack
+
+  echo 0 > /sys/module/intel_idle/parameters/max_cstate
+  echo "performance" > /sys/module/pcie_aspm/parameters/policy
+
 
 }
 
