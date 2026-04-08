@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.3"
-version_test="222"
+version_test="223"
 
 RED='\033[31m'
 GREEN='\033[32m'
@@ -162,10 +162,11 @@ sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journa
 }
 
 sysctl_p() {
-sysctl -p >/dev/null 2>&1
-sysctl --system >/dev/null 2>&1
-sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
-ip route flush cache >/dev/null 2>&1
+  sysctl -p >/dev/null 2>&1
+  sysctl --system >/dev/null 2>&1
+  sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
+  sysctl -w net.ipv6.route.flush=1 >/dev/null 2>&1
+  ip route flush cache >/dev/null 2>&1
 }
 
 Install_bbr() {
