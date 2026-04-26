@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="226"
+version_test="227"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -114,8 +114,6 @@ esac
 # ==================== 网络接口配置 ====================
 nic_interface=$(ip addr | grep 'state UP' | awk '{print $2}' | sed 's/.$//')
 
-interfaces=$(nmcli device status | awk '{print $1}' | grep -v DEVICE)
-
 # ==================== 文件路径配置 ====================
 backup_bak="/etc/sysctl.conf.bak"
 tmp_new="/tmp/sysctl.new"
@@ -169,8 +167,6 @@ tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Insta
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 
 nic_list=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
-
-local nics=$(nic_list)
 
 # ==================== 依赖检查与安装 ====================
 # 在此添加脚本运行所需的命令，缺失将自动安装
