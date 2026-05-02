@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="227"
+version_test="228"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -245,7 +245,7 @@ sed -i '/^session required pam_limits.so/d' /etc/pam.d/common-session 2>/dev/nul
 echo "session required pam_limits.so" >> /etc/pam.d/common-session
 
 # 透明大页设置
-  echo madvise >/sys/kernel/mm/transparent_hugepage/enabled
+  echo never >/sys/kernel/mm/transparent_hugepage/enabled
 
 # CPU 性能模式设置
   test -e /sys/devices/system/cpu/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor
