@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="229"
+version_test="230"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -274,6 +274,8 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   echo 0 > /sys/module/intel_idle/parameters/max_cstate
   echo "performance" > /sys/module/pcie_aspm/parameters/policy
 
+
+  echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
 
 }
 
