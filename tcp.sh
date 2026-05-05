@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="232"
+version_test="233"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -191,7 +191,7 @@ CONF_FILE="/etc/systemd/journald.conf"
 BACKUP_FILE="/etc/systemd/journald.conf.bak.$(date +%F_%T)"
 
 if [[ ! "$MODE" =~ ^[1-4]$ ]]; then
-  echo "用法: $0 [1|2|3|4]"
+  # echo "用法: $0 [1|2|3|4]"
   echo "  1 - 不记录"
   echo "  2 - 经常用"
   echo "  3 - 低延迟 不压缩"
