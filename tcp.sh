@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="230"
+version_test="231"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -182,6 +182,93 @@ check_and_install() {
 }
 
 check_and_install
+
+
+systemd_journald_optimize() {
+
+MODE=$1
+CONF_FILE="/etc/systemd/journald.conf"
+BACKUP_FILE="/etc/systemd/journald.conf.bak.$(date +%F_%T)"
+
+if [[ ! "$MODE" =~ ^[1-3]$ ]]; then
+  echo "用法: $0 [1|2|3]"
+  echo "  1 - 不记录"
+  echo "  2 - 经常用"
+  echo "  3 - 低延迟 不压缩"
+  echo "  4 - 低延迟 压缩"
+  exit 1
+fi
+
+# 备份原配置
+cp "$CONF_FILE" "$BACKUP_FILE"
+echo "已备份原配置至 $BACKUP_FILE"
+
+# 基础配置项 (清空旧的 [Journal] 部分)
+cat <<EOF > "$CONF_FILE"
+[Journal]
+EOF
+
+case $MODE in
+  1)
+    echo "正在应用: 模式 1 (不记录)"
+    cat <<EOF >> "$CONF_FILE"
+Storage=none
+ForwardToSyslog=no
+ForwardToKMsg=no
+ForwardToConsole=no
+ForwardToWall=no
+EOF
+    ;;
+  2)
+    echo "正在应用: 模式 2 (经常用)"
+    cat <<EOF >> "$CONF_FILE"
+Storage=persistent
+Compress=yes
+SystemMaxUse=1G
+SystemKeepFree=2G
+SystemMaxFileSize=100M
+MaxRetentionSec=1month
+SyncIntervalSec=5m
+RateLimitIntervalSec=30s
+RateLimitBurst=10000
+EOF
+    ;;
+  3)
+    echo "正在应用: 模式 3 (低延迟 不压缩)"
+    cat <<EOF >> "$CONF_FILE"
+Storage=volatile
+Compress=no
+RuntimeMaxUse=256M
+RuntimeKeepFree=64M
+RuntimeMaxFileSize=32M
+SyncIntervalSec=0
+ForwardToSyslog=no
+ForwardToKMsg=no
+ForwardToConsole=no
+EOF
+    ;;
+  4)
+    echo "正在应用: 模式 4 (低延迟 压缩)"
+    cat <<EOF >> "$CONF_FILE"
+Storage=volatile
+SystemMaxUse=256M
+RuntimeMaxUse=48M
+SystemKeepFree=1G
+MaxRetentionSec=2d
+MaxFileSec=12h
+Compress=yes
+ForwardToSyslog=no
+RateLimitIntervalSec=1s
+RateLimitBurst=30
+EOF
+    ;;
+esac
+
+# 重启服务应用更改
+systemctl restart systemd-journald
+echo "systemd-journald 服务已重启，配置生效。"
+
+}
 
 # ==================== 通用函数 ====================
 break_end() {
@@ -422,6 +509,7 @@ while true; do
     echo "11. XXX 12. 内核脚本"
     echo "13. 丢失数据包 14. 检查缓冲"
     echo "15. 检查当前设置 "
+    echo "16. systemd-journald 优化 "
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -442,6 +530,7 @@ while true; do
       13) lost_packet ;;
       14) check_buffer ;;
       15) check_settings ;;
+      16) systemd_journald_optimize ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
