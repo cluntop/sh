@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="233"
+version_test="234"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -186,42 +186,62 @@ check_and_install
 
 systemd_journald_optimize() {
 
-# MODE=$1
-CONF_FILE="/etc/systemd/journald.conf"
-BACKUP_FILE="/etc/systemd/journald.conf.bak.$(date +%F_%T)"
+    local CONF_FILE="/etc/systemd/journald.conf"
+    
+    while true; do
+        clear
+        echo "========================================"
+        echo "      systemd-journald 优化子菜单"
+        echo "========================================"
+        echo "  1 - 不记录模式 (无日志)"
+        echo "  2 - 经常用模式 (持久化, 1GB 限制)"
+        echo "  3 - 低延迟模式 (内存存储, 不压缩)"
+        echo "  4 - 低延迟模式 (内存存储, 开启压缩)"
+        echo "----------------------------------------"
+        echo "  0 - 返回上一级菜单"
+        echo "========================================"
+        
+        read -e -p "请输入 [0-4]: " MODE
+        
+        # 处理返回逻辑
+        if [[ "$MODE" == "0" ]]; then
+            return 0
+        fi
 
-if [[ ! "$MODE" =~ ^[1-4]$ ]]; then
-  # echo "用法: $0 [1|2|3|4]"
-  echo "  1 - 不记录"
-  echo "  2 - 经常用"
-  echo "  3 - 低延迟 不压缩"
-  echo "  4 - 低延迟 压缩"
-  exit 1
-fi
+        # 处理无效输入
+        if [[ ! "$MODE" =~ ^[1-4]$ ]]; then
+            echo "无效输入，请重新选择！"
+            sleep 1
+            continue
+        fi
 
-# 备份原配置
-cp "$CONF_FILE" "$BACKUP_FILE"
-echo "已备份原配置至 $BACKUP_FILE"
+        # --- 只有选择 1-4 时才执行以下逻辑 ---
+        
+        # 1. 备份原配置
+        local BACKUP_FILE="${CONF_FILE}.bak.$(date +%Y%m%d_%H%M%S)"
+        cp "$CONF_FILE" "$BACKUP_FILE"
+        echo "已备份原配置至 $BACKUP_FILE"
 
-# 基础配置项 (清空旧的 [Journal] 部分)
-cat <<EOF > "$CONF_FILE"
+        # 2. 写入配置头部
+        cat <<EOF > "$CONF_FILE"
 [Journal]
 EOF
 
-case $MODE in
-  1)
-    echo "正在应用: 模式 1 (不记录)"
-    cat <<EOF >> "$CONF_FILE"
+        # 3. 根据模式追加参数
+        case $MODE in
+          1)
+            echo "正在应用: 模式 1 (不记录)"
+            cat <<EOF >> "$CONF_FILE"
 Storage=none
 ForwardToSyslog=no
 ForwardToKMsg=no
 ForwardToConsole=no
 ForwardToWall=no
 EOF
-    ;;
-  2)
-    echo "正在应用: 模式 2 (经常用)"
-    cat <<EOF >> "$CONF_FILE"
+            ;;
+          2)
+            echo "正在应用: 模式 2 (经常用)"
+            cat <<EOF >> "$CONF_FILE"
 Storage=persistent
 Compress=yes
 SystemMaxUse=1G
@@ -232,10 +252,10 @@ SyncIntervalSec=5m
 RateLimitIntervalSec=30s
 RateLimitBurst=10000
 EOF
-    ;;
-  3)
-    echo "正在应用: 模式 3 (低延迟 不压缩)"
-    cat <<EOF >> "$CONF_FILE"
+            ;;
+          3)
+            echo "正在应用: 模式 3 (低延迟 不压缩)"
+            cat <<EOF >> "$CONF_FILE"
 Storage=volatile
 Compress=no
 RuntimeMaxUse=256M
@@ -246,10 +266,10 @@ ForwardToSyslog=no
 ForwardToKMsg=no
 ForwardToConsole=no
 EOF
-    ;;
-  4)
-    echo "正在应用: 模式 4 (低延迟 压缩)"
-    cat <<EOF >> "$CONF_FILE"
+            ;;
+          4)
+            echo "正在应用: 模式 4 (低延迟 压缩)"
+            cat <<EOF >> "$CONF_FILE"
 Storage=volatile
 SystemMaxUse=256M
 RuntimeMaxUse=48M
@@ -261,12 +281,16 @@ ForwardToSyslog=no
 RateLimitIntervalSec=1s
 RateLimitBurst=30
 EOF
-    ;;
-esac
+            ;;
+        esac
 
-# 重启服务应用更改
-systemctl restart systemd-journald
-echo "systemd-journald 服务已重启，配置生效。"
+        # 4. 重启服务并提示
+        systemctl restart systemd-journald
+        echo "----------------------------------------"
+        echo "配置已生效，systemd-journald 已重启。"
+        echo "按任意键返回子菜单..."
+        read -n 1
+    done
 
 }
 
