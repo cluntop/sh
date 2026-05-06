@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="234"
+version_test="235"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -411,7 +411,9 @@ sysctl_p() {
   sudo nscd -i hosts 2>/dev/null || true
 
   # 或者直接通过重启网络服务来刷新内核 DNS 状态
-  # sudo systemctl restart networking 2>/dev/null || true
+  sudo systemctl restart networking 2>/dev/null || true
+
+  
 }
 
 # ==================== BBR 内核安装 ====================
