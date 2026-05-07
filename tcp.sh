@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="237"
+version_test="238"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -370,18 +370,18 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
 
   # 进程文件描述符限制
-  ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n 1 -i sudo prlimit --pid {} --nofile=1048576
+  ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -i sudo prlimit --pid {} --nofile=1048576
 
   # 网卡参数优化
   # ethtool -C $nic rx-usecs 10 tx-usecs 10
-  ethtool -K $nic sg on tx on rx on tso on gso on
+  ethtool -K $nic sg on tx on rx on tso on gso on >/dev/null 2>&1
 
   # 加载连接跟踪模块
   sudo modprobe ip_conntrack
 
   #  电源管理优化
-  echo 0 >/sys/module/intel_idle/parameters/max_cstate
-  echo "performance" >/sys/module/pcie_aspm/parameters/policy
+  echo 0 >/sys/module/intel_idle/parameters/max_cstate >/dev/null 2>&1
+  echo "performance" >/sys/module/pcie_aspm/parameters/policy >/dev/null 2>&1
 
 
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
