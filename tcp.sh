@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="236"
+version_test="237"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -112,7 +112,7 @@ case "$OS" in
 esac
 
 # ==================== 网络接口配置 ====================
-nic_interface=$(ip addr | grep 'state UP' | awk '{print $2}' | sed 's/.$//')
+nic=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
 
 # ==================== 文件路径配置 ====================
 backup_bak="/etc/sysctl.conf.bak"
@@ -165,8 +165,6 @@ DEV=$(ip route show default | awk '/default/ {print $5; exit}')
 # ==================== 内存硬件信息 ====================
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
-
-nic_list=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
 
 # ==================== 依赖检查与安装 ====================
 # 在此添加脚本运行所需的命令，缺失将自动安装
@@ -355,11 +353,11 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractiv
 sed -i '/^session required pam_limits.so/d' /etc/pam.d/common-session 2>/dev/null
 echo "session required pam_limits.so" >> /etc/pam.d/common-session
 
-# 透明大页设置
+  # 透明大页设置
   echo never >/sys/kernel/mm/transparent_hugepage/enabled
   echo never >/sys/kernel/mm/transparent_hugepage/defrag
 
-# CPU 性能模式设置
+  # CPU 性能模式设置
   test -e /sys/devices/system/cpu/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor
   test -e /sys/devices/system/cpu/cpufreq/policy0/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/policy*/scaling_governor
   test -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
@@ -372,18 +370,18 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
 
   # 进程文件描述符限制
-  ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n1 -i sudo prlimit --pid {} --nofile=1048576
+  ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -n 1 -i sudo prlimit --pid {} --nofile=1048576
 
   # 网卡参数优化
-  # ethtool -C $nic_interface rx-usecs 10 tx-usecs 10
-  ethtool -K $nics sg on tx on rx on tso on gso on
+  # ethtool -C $nic rx-usecs 10 tx-usecs 10
+  ethtool -K $nic sg on tx on rx on tso on gso on
 
   # 加载连接跟踪模块
   sudo modprobe ip_conntrack
 
   #  电源管理优化
-  echo 0 > /sys/module/intel_idle/parameters/max_cstate
-  echo "performance" > /sys/module/pcie_aspm/parameters/policy
+  echo 0 >/sys/module/intel_idle/parameters/max_cstate
+  echo "performance" >/sys/module/pcie_aspm/parameters/policy
 
 
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
