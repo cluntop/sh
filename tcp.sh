@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="239"
+version_test="240"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -415,6 +415,10 @@ sysctl_p() {
 
   # 清理全部 ARP 缓存
   ip neigh flush all 2>/dev/null || true
+
+  MAX_CONN=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null)
+  HASHSIZE=$((MAX_CONN / 2))
+  echo "$HASHSIZE" > /sys/module/nf_conntrack/parameters/hashsize
 }
 
 # ==================== BBR 内核安装 ====================
