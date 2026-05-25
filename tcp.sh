@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="240"
+version_test="241"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -387,6 +387,21 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
 
 
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
+
+  # ensure debugfs is mounted
+if ! mountpoint -q /sys/kernel/debug; then
+    mount -t debugfs none /sys/kernel/debug
+fi
+
+# define target slice in nanoseconds (e.g., 10ms for high throughput)
+baseSliceNs=10000000
+
+# check if the parameter exists in the current XanMod build and apply
+schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
+if [ -f "$schedConfigPath" ]; then
+    echo $baseSliceNs > $schedConfigPath
+fi
+
 
 }
 
