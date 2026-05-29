@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="242"
+version_test="243"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -412,57 +412,56 @@ sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journa
 
 net_mem() {
 
-# define target configuration file
 sysctlConfFile="/etc/sysctl.conf"
 
-# fetch total system ram in kilobytes
-memTotalKb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+# fetch raw available memory in kilobytes
+rawMemTotalKb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 
-# enforce 128MB (131072 KB) minimum memory requirement
-if [ "$memTotalKb" -lt 131072 ]; then
+# enforce absolute minimum to prevent execution on unsupported systems
+if [ "$rawMemTotalKb" -lt 131072 ]; then
   echo "Error: System RAM is below the 128MB minimum threshold. Aborting."
   exit 1
 fi
 
-# calculate total memory pages (1 page = 4KB on standard x86_64 architectures)
+# round up memory to the nearest gigabyte to match theoretical hardware specifications
+# 1 GB = 1048576 KB
+nominalGb=$(((rawMemTotalKb + 1048575) / 1048576))
+memTotalKb=$((nominalGb * 1048576))
+
+# calculate total memory pages using the nominal gigabyte value
 totalPages=$((memTotalKb / 4))
 
-# calculate tcp_mem thresholds: allocate 25% of total ram for max bounds
+# calculate tcp_mem thresholds: 25% of nominal ram
 tcpMemMax=$((totalPages * 25 / 100))
 tcpMemPressure=$((tcpMemMax * 75 / 100))
 tcpMemMin=$((tcpMemMax * 50 / 100))
 
-# calculate udp_mem thresholds: allocate 12.5% of total ram for max bounds
+# calculate udp_mem thresholds: 12.5% of nominal ram
 udpMemMax=$((totalPages * 125 / 1000))
 udpMemPressure=$((udpMemMax * 75 / 100))
 udpMemMin=$((udpMemMax * 50 / 100))
 
-# format sysctl strings
 tcpMemString="$tcpMemMin $tcpMemPressure $tcpMemMax"
 udpMemString="$udpMemMin $udpMemPressure $udpMemMax"
 
-# function to safely replace or append parameter in configuration file
 updateSysctlParam() {
     local paramKey="$1"
     local paramValue="$2"
     
-    # check if the key already exists in the configuration file
     if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
-        # replace existing line
         sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
     else
-        # append new line
         echo "${paramKey} = ${paramValue}" >> "$sysctlConfFile"
     fi
 }
 
-# update configuration file with calculated optimal values
 updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
 updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
 
-# print calculated values for user verification
-echo "Optimization applied for XanMod Kernel:"
-echo "Memory Total: $((memTotalKb / 1024)) MB"
+# print results
+echo "Optimization applied for XanMod Kernel (Based on Nominal RAM):"
+echo "Raw MemTotal: $((rawMemTotalKb / 1024)) MB"
+echo "Nominal Rounded RAM: $((memTotalKb / 1024)) MB"
 echo "net.ipv4.tcp_mem = $tcpMemString"
 echo "net.ipv4.udp_mem = $udpMemString"
 
