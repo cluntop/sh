@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="241"
+version_test="242"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -410,8 +410,69 @@ cleaning_trash() {
 sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s; sudo dpkg -l | grep '^rc' | awk '{print $2}' | sudo xargs dpkg --purge; sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge; docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; rm -rf ~/Downloads/*; rm -rf ~/.cache/thumbnails/*; rm -rf ~/.mozilla/firefox/*.default-release/cache2/*; sudo apt-get clean; dpkg --list | grep linux-image | grep -v `uname -r` | awk '{print $2}' | xargs sudo apt-get remove --purge -y
 }
 
+net_mem() {
+
+# define target configuration file
+sysctlConfFile="/etc/sysctl.conf"
+
+# fetch total system ram in kilobytes
+memTotalKb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+
+# enforce 128MB (131072 KB) minimum memory requirement
+if [ "$memTotalKb" -lt 131072 ]; then
+  echo "Error: System RAM is below the 128MB minimum threshold. Aborting."
+  exit 1
+fi
+
+# calculate total memory pages (1 page = 4KB on standard x86_64 architectures)
+totalPages=$((memTotalKb / 4))
+
+# calculate tcp_mem thresholds: allocate 25% of total ram for max bounds
+tcpMemMax=$((totalPages * 25 / 100))
+tcpMemPressure=$((tcpMemMax * 75 / 100))
+tcpMemMin=$((tcpMemMax * 50 / 100))
+
+# calculate udp_mem thresholds: allocate 12.5% of total ram for max bounds
+udpMemMax=$((totalPages * 125 / 1000))
+udpMemPressure=$((udpMemMax * 75 / 100))
+udpMemMin=$((udpMemMax * 50 / 100))
+
+# format sysctl strings
+tcpMemString="$tcpMemMin $tcpMemPressure $tcpMemMax"
+udpMemString="$udpMemMin $udpMemPressure $udpMemMax"
+
+# function to safely replace or append parameter in configuration file
+updateSysctlParam() {
+    local paramKey="$1"
+    local paramValue="$2"
+    
+    # check if the key already exists in the configuration file
+    if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
+        # replace existing line
+        sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
+    else
+        # append new line
+        echo "${paramKey} = ${paramValue}" >> "$sysctlConfFile"
+    fi
+}
+
+# update configuration file with calculated optimal values
+updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
+updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
+
+# print calculated values for user verification
+echo "Optimization applied for XanMod Kernel:"
+echo "Memory Total: $((memTotalKb / 1024)) MB"
+echo "net.ipv4.tcp_mem = $tcpMemString"
+echo "net.ipv4.udp_mem = $udpMemString"
+
+}
+
 # ==================== Sysctl 配置应用 ====================
 sysctl_p() {
+
+  net_mem
+
   sysctl -p >/dev/null 2>&1
   sysctl --system >/dev/null 2>&1
   sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
