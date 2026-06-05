@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="243"
+version_test="244"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -326,20 +326,20 @@ fi
 # ==================== 系统限制优化 ====================
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
-* soft     nproc          1024000
-* hard     nproc          1024000
-* soft     nofile         1024000
-* hard     nofile         1024000
+* soft nproc unlimited
+* hard nproc unlimited
+* soft nofile unlimited
+* hard nofile unlimited
 
-root soft     nproc          1024000
-root hard     nproc          1024000
-root soft     nofile         1024000
-root hard     nofile         1024000
+root soft nproc unlimited
+root hard nproc unlimited
+root soft nofile unlimited
+root hard nofile unlimited
 
-bro soft     nproc          1024000
-bro hard     nproc          1024000
-bro soft     nofile         1024000
-bro hard     nofile         1024000
+bro soft nproc unlimited
+bro hard nproc unlimited
+bro soft nofile unlimited
+bro hard nofile unlimited
 EOF
 }
 
