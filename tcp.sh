@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="244"
+version_test="245"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -376,7 +376,7 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   # ethtool -C $nic rx-usecs 10 tx-usecs 10
   ethtool -K $nic sg on tx on rx on tso on gso on >/dev/null 2>&1
 
-  ip link set dev $nic gso_max_size 16384
+  # ip link set dev $nic gso_max_size 16384
 
   # 加载连接跟踪模块
   sudo modprobe ip_conntrack
@@ -401,6 +401,9 @@ schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
 if [ -f "$schedConfigPath" ]; then
     echo $baseSliceNs > $schedConfigPath
 fi
+
+  sudo rmmod authencesn 2>/dev/null
+  sudo rmmod algif_aead 2>/dev/null
 
 
 }
