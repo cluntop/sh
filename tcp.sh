@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="245"
+version_test="246"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -374,7 +374,7 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
 
   # 网卡参数优化
   # ethtool -C $nic rx-usecs 10 tx-usecs 10
-  ethtool -K $nic sg on tx on rx on tso on gso on >/dev/null 2>&1
+  # ethtool -K $nic sg on tx on rx on tso on gso on >/dev/null 2>&1
 
   # ip link set dev $nic gso_max_size 16384
 
