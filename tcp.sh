@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="246"
+version_test="247"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -336,10 +336,8 @@ root hard nproc unlimited
 root soft nofile unlimited
 root hard nofile unlimited
 
-bro soft nproc unlimited
-bro hard nproc unlimited
-bro soft nofile unlimited
-bro hard nofile unlimited
+* soft core 0
+* hard core 0
 EOF
 }
 
