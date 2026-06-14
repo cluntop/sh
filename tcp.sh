@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="247"
+version_test="248"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -168,7 +168,7 @@ tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 
 # ==================== 依赖检查与安装 ====================
 # 在此添加脚本运行所需的命令，缺失将自动安装
-REQUIRED_COMMANDS="sudo bc wget ethtool dmidecode ip ss"
+REQUIRED_COMMANDS="sudo bc wget ethtool dmidecode tuned"
 
 check_and_install() {
     for cmd in $REQUIRED_COMMANDS; do
