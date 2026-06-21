@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.6"
-version_test="248"
+version_test="249"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -460,11 +460,11 @@ updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
 updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
 
 # print results
-echo "Optimization applied for XanMod Kernel (Based on Nominal RAM):"
-echo "Raw MemTotal: $((rawMemTotalKb / 1024)) MB"
-echo "Nominal Rounded RAM: $((memTotalKb / 1024)) MB"
-echo "net.ipv4.tcp_mem = $tcpMemString"
-echo "net.ipv4.udp_mem = $udpMemString"
+#echo "Optimization applied for XanMod Kernel (Based on Nominal RAM):"
+#echo "Raw MemTotal: $((rawMemTotalKb / 1024)) MB"
+#echo "Nominal Rounded RAM: $((memTotalKb / 1024)) MB"
+#echo "net.ipv4.tcp_mem = $tcpMemString"
+#echo "net.ipv4.udp_mem = $udpMemString"
 
 }
 
@@ -493,7 +493,7 @@ sysctl_p() {
   ip neigh flush all 2>/dev/null || true
 
   MAX_CONN=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null)
-  HASHSIZE=$((MAX_CONN / 2))
+  HASHSIZE=$((MAX_CONN / 4))
   echo "$HASHSIZE" > /sys/module/nf_conntrack/parameters/hashsize
 }
 
