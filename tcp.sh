@@ -446,19 +446,19 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
 		    echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
   done
 
-		# udev 规则持久化（重启后生效）
-		cat > /etc/udev/rules.d/99-io-scheduler.rules << 'EOF'
-		# SSD / NVMe → none
-		ACTION=="add|change", KERNEL=="sd[a-z]|nvme[0-9]n[0-9]", \
-		    ATTR{queue/rotational}=="0", \
-		    ATTR{queue/scheduler}="none", \
-		    ATTR{queue/read_ahead_kb}="0"
-		# HDD → mq-deadline
-		ACTION=="add|change", KERNEL=="sd[a-z]", \
-		    ATTR{queue/rotational}=="1", \
-		    ATTR{queue/scheduler}="mq-deadline", \
-		    ATTR{queue/read_ahead_kb}="256"
-		EOF
+# udev 规则持久化（重启后生效）
+cat > /etc/udev/rules.d/99-io-scheduler.rules << 'EOF'
+# SSD / NVMe → none
+ACTION=="add|change", KERNEL=="sd[a-z]|nvme[0-9]n[0-9]", \
+    ATTR{queue/rotational}=="0", \
+    ATTR{queue/scheduler}="none", \
+    ATTR{queue/read_ahead_kb}="0"
+# HDD → mq-deadline
+ACTION=="add|change", KERNEL=="sd[a-z]", \
+    ATTR{queue/rotational}=="1", \
+    ATTR{queue/scheduler}="mq-deadline", \
+    ATTR{queue/read_ahead_kb}="256"
+EOF
 
   # 路由参数优化
   ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
