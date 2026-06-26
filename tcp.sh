@@ -2,8 +2,8 @@
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
 
-version="1.2.6"
-version_test="249"
+version="1.2.7"
+version_test="250"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -111,6 +111,21 @@ case "$OS" in
         ;;
 esac
 
+# ==================== 依赖检查与安装 ====================
+# 在此添加脚本运行所需的命令，缺失将自动安装
+REQUIRED_COMMANDS="sudo bc wget ethtool dmidecode tuned"
+
+check_and_install() {
+    for cmd in $REQUIRED_COMMANDS; do
+        if ! command -v "$cmd" &> /dev/null; then
+            echo -e "${YELLOW}缺少命令: $cmd，正在安装...${RESET}"
+            $PKG_INSTALL $cmd
+        fi
+    done
+}
+
+check_and_install
+
 # ==================== 网络接口配置 ====================
 nic=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
 
@@ -165,21 +180,6 @@ DEV=$(ip route show default | awk '/default/ {print $5; exit}')
 # ==================== 内存硬件信息 ====================
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
 tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
-
-# ==================== 依赖检查与安装 ====================
-# 在此添加脚本运行所需的命令，缺失将自动安装
-REQUIRED_COMMANDS="sudo bc wget ethtool dmidecode tuned"
-
-check_and_install() {
-    for cmd in $REQUIRED_COMMANDS; do
-        if ! command -v "$cmd" &> /dev/null; then
-            echo -e "${YELLOW}缺少命令: $cmd，正在安装...${RESET}"
-            $PKG_INSTALL $cmd
-        fi
-    done
-}
-
-check_and_install
 
 
 systemd_journald_optimize() {
@@ -313,10 +313,11 @@ else
 fi
     echo "1. 现在更新 0. 返回菜单"
     read -e -p "请输入你的选择: " choice
+      choice="${choice:-1}"
       case "$choice" in
       1)
-        curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o clun_tcp.sh && chmod +x clun_tcp.sh
-        cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
+        curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o /tmp/clun_tcp.sh && chmod +x /tmp/clun_tcp.sh
+        cp -f /tmp/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
         ;;
       *) clun_tcp ;;
     esac
@@ -326,15 +327,15 @@ fi
 # ==================== 系统限制优化 ====================
 Install_limits() {
 cat >/etc/security/limits.conf<<EOF
-* soft nproc unlimited
-* hard nproc unlimited
-* soft nofile unlimited
-* hard nofile unlimited
-
 root soft nproc unlimited
 root hard nproc unlimited
 root soft nofile unlimited
 root hard nofile unlimited
+
+* soft nproc unlimited
+* hard nproc unlimited
+* soft nofile unlimited
+* hard nofile unlimited
 
 * soft core 0
 * hard core 0
@@ -359,10 +360,105 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   test -e /sys/devices/system/cpu/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor
   test -e /sys/devices/system/cpu/cpufreq/policy0/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/policy*/scaling_governor
   test -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-  test -e /sys/devices/system/cpu/intel_pstate/no_turbo && echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
+  
   test -e /sys/devices/system/cpu/cpufreq/boost && echo 1 > /sys/devices/system/cpu/cpufreq/boost
+  test -e /sys/devices/system/cpu/intel_pstate/no_turbo && echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
   test -e /sys/devices/system/cpu/intel_pstate/max_perf_pct && echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
-  test -n "$(which auditctl)" && auditctl -a never,task >/dev/null 2>&1
+  test -n "$(which auditctl)" && auditctl -D && auditctl -a never,task >/dev/null 2>&1
+  
+  # 关闭 THP khugepaged 扫描（减少后台开销）
+  echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag &>/dev/null
+  cpupower idle-set -D 1 &>/dev/null
+  
+  for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
+    for state in "$cpu"/cpuidle/state[2-9]; do
+        [[ -f "$state/disable" ]] && echo 1 > "$state/disable"
+    done
+  done
+  
+  if systemctl is-active --quiet irqbalance 2>/dev/null; then
+    systemctl stop irqbalance && systemctl disable irqbalance
+    # warn "已停止 irqbalance（手动绑定 NIC 中断，避免中断漂移）"
+  fi
+  
+  PRIMARY_NIC=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
+  CPU_COUNT=$(nproc)
+  CPU_MASK=$(printf "%x" $(( (1 << CPU_COUNT) - 1 )))
+
+  if [[ -n "$PRIMARY_NIC" ]]; then
+		    # IRQ → 轮询绑核
+		    IRQ_LIST=$(grep -w "${PRIMARY_NIC}" /proc/interrupts 2>/dev/null | awk -F: '{print $1}' | tr -d ' ')
+		    i=0
+		    for irq in $IRQ_LIST; do
+		        mask=$(printf "%x" $((1 << (i % CPU_COUNT))))
+		        echo "$mask" > /proc/irq/${irq}/smp_affinity 2>/dev/null || true
+		        ((i++)) || true
+		    done
+		    [[ $i -gt 0 ]] && info "网卡 ${PRIMARY_NIC}: ${i} 个 IRQ 轮询绑定到 ${CPU_COUNT} 核" \
+		                    || skip "未找到 ${PRIMARY_NIC} 的 IRQ 条目（可能是虚拟化网卡）"
+		
+		    # RPS: 软中断在所有 CPU 上分发（无多队列网卡时补充）
+		    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_cpus; do
+		        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
+		    done
+		
+		    # XPS: 每个 TX 队列绑定对应 CPU
+		    for f in /sys/class/net/${PRIMARY_NIC}/queues/tx-*/xps_cpus; do
+		        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
+		    done
+		
+		    # RPS flow limit（防止单核热点）
+		    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_flow_cnt; do
+		        [[ -f "$f" ]] && echo 4096 > "$f"
+		    done
+		    info "RPS/XPS flow → 全部 ${CPU_COUNT} 核（mask: 0x${CPU_MASK}）"
+		else
+		    skip "未检测到默认路由网卡，跳过 IRQ/RPS/XPS 配置"
+	 fi
+	 
+	 for disk in $(lsblk -d -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do
+		    SCH_FILE="/sys/block/${disk}/queue/scheduler"
+		    [[ -f "$SCH_FILE" ]] || continue
+		
+		    ROTATIONAL=$(cat /sys/block/${disk}/queue/rotational 2>/dev/null || echo 1)
+		    if [[ "$ROTATIONAL" == "0" ]]; then
+		        # SSD / NVMe: none（让硬件自己排队）或 mq-deadline
+		        if grep -q "\[none\]\|none" "$SCH_FILE"; then
+		            echo none > "$SCH_FILE"
+		            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+		            info "磁盘 ${disk} (SSD/NVMe) → scheduler: none, read_ahead: 0"
+		        elif grep -q "mq-deadline" "$SCH_FILE"; then
+		            echo mq-deadline > "$SCH_FILE"
+		            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+		            info "磁盘 ${disk} (SSD) → scheduler: mq-deadline"
+		        fi
+		        # 关闭合并（SSD 随机IO无需合并）
+		        echo 2 > /sys/block/${disk}/queue/nomerges 2>/dev/null || true
+		    else
+		        # HDD: mq-deadline + 适当预读
+		        if grep -q "mq-deadline" "$SCH_FILE"; then
+		            echo mq-deadline > "$SCH_FILE"
+		            echo 256 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+		            info "磁盘 ${disk} (HDD) → scheduler: mq-deadline, read_ahead: 256K"
+		        fi
+		    fi
+		    # 队列深度（NVMe 硬件已很高，HDD 适当增大）
+		    echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
+  done
+
+		# udev 规则持久化（重启后生效）
+		cat > /etc/udev/rules.d/99-io-scheduler.rules << 'EOF'
+		# SSD / NVMe → none
+		ACTION=="add|change", KERNEL=="sd[a-z]|nvme[0-9]n[0-9]", \
+		    ATTR{queue/rotational}=="0", \
+		    ATTR{queue/scheduler}="none", \
+		    ATTR{queue/read_ahead_kb}="0"
+		# HDD → mq-deadline
+		ACTION=="add|change", KERNEL=="sd[a-z]", \
+		    ATTR{queue/rotational}=="1", \
+		    ATTR{queue/scheduler}="mq-deadline", \
+		    ATTR{queue/read_ahead_kb}="256"
+		EOF
 
   # 路由参数优化
   ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
@@ -383,26 +479,24 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   echo 0 >/sys/module/intel_idle/parameters/max_cstate >/dev/null 2>&1
   echo "performance" >/sys/module/pcie_aspm/parameters/policy >/dev/null 2>&1
 
-
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
 
   # ensure debugfs is mounted
-if ! mountpoint -q /sys/kernel/debug; then
+		if ! mountpoint -q /sys/kernel/debug; then
     mount -t debugfs none /sys/kernel/debug
-fi
+  fi
 
-# define target slice in nanoseconds (e.g., 10ms for high throughput)
-baseSliceNs=10000000
+  # define target slice in nanoseconds (e.g., 10ms for high throughput)
+  baseSliceNs=10000000
 
-# check if the parameter exists in the current XanMod build and apply
-schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
-if [ -f "$schedConfigPath" ]; then
+  # check if the parameter exists in the current XanMod build and apply
+  schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
+  if [ -f "$schedConfigPath" ]; then
     echo $baseSliceNs > $schedConfigPath
-fi
+  fi
 
   sudo rmmod authencesn 2>/dev/null
   sudo rmmod algif_aead 2>/dev/null
-
 
 }
 
@@ -418,12 +512,6 @@ sysctlConfFile="/etc/sysctl.conf"
 # fetch raw available memory in kilobytes
 rawMemTotalKb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
 
-# enforce absolute minimum to prevent execution on unsupported systems
-if [ "$rawMemTotalKb" -lt 131072 ]; then
-  echo "Error: System RAM is below the 128MB minimum threshold. Aborting."
-  exit 1
-fi
-
 # round up memory to the nearest gigabyte to match theoretical hardware specifications
 # 1 GB = 1048576 KB
 nominalGb=$(((rawMemTotalKb + 1048575) / 1048576))
@@ -434,26 +522,26 @@ totalPages=$((memTotalKb / 4))
 
 # calculate tcp_mem thresholds: 25% of nominal ram
 tcpMemMax=$((totalPages * 25 / 100))
-tcpMemPressure=$((tcpMemMax * 75 / 100))
-tcpMemMin=$((tcpMemMax * 50 / 100))
+tcpMemPressure=$((tcpMemMax * 85 / 100))
+tcpMemMin=$((tcpMemMax * 70 / 100))
 
 # calculate udp_mem thresholds: 12.5% of nominal ram
-udpMemMax=$((totalPages * 125 / 1000))
-udpMemPressure=$((udpMemMax * 75 / 100))
-udpMemMin=$((udpMemMax * 50 / 100))
+udpMemMax=$((totalPages * 8 / 1000))
+udpMemPressure=$((udpMemMax * 85 / 100))
+udpMemMin=$((udpMemMax * 70 / 100))
 
 tcpMemString="$tcpMemMin $tcpMemPressure $tcpMemMax"
 udpMemString="$udpMemMin $udpMemPressure $udpMemMax"
 
 updateSysctlParam() {
-    local paramKey="$1"
-    local paramValue="$2"
+  local paramKey="$1"
+  local paramValue="$2"
     
-    if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
-        sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
-    else
-        echo "${paramKey} = ${paramValue}" >> "$sysctlConfFile"
-    fi
+  if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
+      sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
+  else
+      echo "${paramKey} = ${paramValue}" >> "$sysctlConfFile"
+  fi
 }
 
 updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
