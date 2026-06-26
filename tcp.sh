@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="251"
+version_test="252"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -527,8 +527,8 @@ tcpMemMin=$((tcpMemMax * 70 / 100))
 
 # calculate udp_mem thresholds: 12.5% of nominal ram
 udpMemMax=$((totalPages * 125 / 1000))
-udpMemPressure=$((udpMemMax * 85 / 100))
-udpMemMin=$((udpMemMax * 70 / 100))
+udpMemPressure=$((udpMemMax * 75 / 100))
+udpMemMin=$((udpMemMax * 50 / 100))
 
 tcpMemString="$tcpMemMin $tcpMemPressure $tcpMemMax"
 udpMemString="$udpMemMin $udpMemPressure $udpMemMax"
