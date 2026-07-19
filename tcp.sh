@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="253"
+version_test="254"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -713,7 +713,7 @@ while true; do
     read -e -p "请输入你的选择: " choice
 
     case $choice in
-      1) Install_All : clear ; exit ;;
+      1) Install_All ; clear ; exit ;;
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl : clear ; exit ;;
@@ -727,7 +727,7 @@ while true; do
       14) check_buffer ;;
       15) check_settings ;;
       16) systemd_journald_optimize ;;
-      17) sysctl_p ;;
+      17) sysctl_p ; clear ; exit ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
