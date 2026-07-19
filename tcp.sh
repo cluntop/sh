@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="252"
+version_test="253"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -185,7 +185,7 @@ tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
 systemd_journald_optimize() {
 
     local CONF_FILE="/etc/systemd/journald.conf"
-    
+
     while true; do
         clear
         echo "========================================"
@@ -198,9 +198,9 @@ systemd_journald_optimize() {
         echo "----------------------------------------"
         echo "  0 - 返回上一级菜单"
         echo "========================================"
-        
+
         read -e -p "请输入 [0-4]: " MODE
-        
+
         # 处理返回逻辑
         if [[ "$MODE" == "0" ]]; then
             return 0
@@ -214,7 +214,7 @@ systemd_journald_optimize() {
         fi
 
         # --- 只有选择 1-4 时才执行以下逻辑 ---
-        
+
         # 1. 备份原配置
         local BACKUP_FILE="${CONF_FILE}.bak.$(date +%Y%m%d_%H%M%S)"
         cp "$CONF_FILE" "$BACKUP_FILE"
@@ -360,90 +360,90 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   test -e /sys/devices/system/cpu/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor
   test -e /sys/devices/system/cpu/cpufreq/policy0/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/policy*/scaling_governor
   test -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-  
+
   test -e /sys/devices/system/cpu/cpufreq/boost && echo 1 > /sys/devices/system/cpu/cpufreq/boost
   test -e /sys/devices/system/cpu/intel_pstate/no_turbo && echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
   test -e /sys/devices/system/cpu/intel_pstate/max_perf_pct && echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
   test -n "$(which auditctl)" && auditctl -D && auditctl -a never,task >/dev/null 2>&1
-  
+
   # 关闭 THP khugepaged 扫描（减少后台开销）
   echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag &>/dev/null
   cpupower idle-set -D 1 &>/dev/null
-  
+
   for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
     for state in "$cpu"/cpuidle/state[2-9]; do
         [[ -f "$state/disable" ]] && echo 1 > "$state/disable"
     done
   done
-  
+
   if systemctl is-active --quiet irqbalance 2>/dev/null; then
     systemctl stop irqbalance && systemctl disable irqbalance
     # warn "已停止 irqbalance（手动绑定 NIC 中断，避免中断漂移）"
   fi
-  
+
   PRIMARY_NIC=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
   CPU_COUNT=$(nproc)
   CPU_MASK=$(printf "%x" $(( (1 << CPU_COUNT) - 1 )))
 
   if [[ -n "$PRIMARY_NIC" ]]; then
-		    # IRQ → 轮询绑核
-		    IRQ_LIST=$(grep -w "${PRIMARY_NIC}" /proc/interrupts 2>/dev/null | awk -F: '{print $1}' | tr -d ' ')
-		    i=0
-		    for irq in $IRQ_LIST; do
-		        mask=$(printf "%x" $((1 << (i % CPU_COUNT))))
-		        echo "$mask" > /proc/irq/${irq}/smp_affinity 2>/dev/null || true
-		        ((i++)) || true
-		    done
-		    [[ $i -gt 0 ]] && info "网卡 ${PRIMARY_NIC}: ${i} 个 IRQ 轮询绑定到 ${CPU_COUNT} 核" \
-		                    || skip "未找到 ${PRIMARY_NIC} 的 IRQ 条目（可能是虚拟化网卡）"
-		
-		    # RPS: 软中断在所有 CPU 上分发（无多队列网卡时补充）
-		    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_cpus; do
-		        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
-		    done
-		
-		    # XPS: 每个 TX 队列绑定对应 CPU
-		    for f in /sys/class/net/${PRIMARY_NIC}/queues/tx-*/xps_cpus; do
-		        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
-		    done
-		
-		    # RPS flow limit（防止单核热点）
-		    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_flow_cnt; do
-		        [[ -f "$f" ]] && echo 4096 > "$f"
-		    done
-		    info "RPS/XPS flow → 全部 ${CPU_COUNT} 核（mask: 0x${CPU_MASK}）"
-		else
-		    skip "未检测到默认路由网卡，跳过 IRQ/RPS/XPS 配置"
-	 fi
-	 
-	 for disk in $(lsblk -d -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do
-		    SCH_FILE="/sys/block/${disk}/queue/scheduler"
-		    [[ -f "$SCH_FILE" ]] || continue
-		
-		    ROTATIONAL=$(cat /sys/block/${disk}/queue/rotational 2>/dev/null || echo 1)
-		    if [[ "$ROTATIONAL" == "0" ]]; then
-		        # SSD / NVMe: none（让硬件自己排队）或 mq-deadline
-		        if grep -q "\[none\]\|none" "$SCH_FILE"; then
-		            echo none > "$SCH_FILE"
-		            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
-		            info "磁盘 ${disk} (SSD/NVMe) → scheduler: none, read_ahead: 0"
-		        elif grep -q "mq-deadline" "$SCH_FILE"; then
-		            echo mq-deadline > "$SCH_FILE"
-		            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
-		            info "磁盘 ${disk} (SSD) → scheduler: mq-deadline"
-		        fi
-		        # 关闭合并（SSD 随机IO无需合并）
-		        echo 2 > /sys/block/${disk}/queue/nomerges 2>/dev/null || true
-		    else
-		        # HDD: mq-deadline + 适当预读
-		        if grep -q "mq-deadline" "$SCH_FILE"; then
-		            echo mq-deadline > "$SCH_FILE"
-		            echo 256 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
-		            info "磁盘 ${disk} (HDD) → scheduler: mq-deadline, read_ahead: 256K"
-		        fi
-		    fi
-		    # 队列深度（NVMe 硬件已很高，HDD 适当增大）
-		    echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
+                    # IRQ → 轮询绑核
+                    IRQ_LIST=$(grep -w "${PRIMARY_NIC}" /proc/interrupts 2>/dev/null | awk -F: '{print $1}' | tr -d ' ')
+                    i=0
+                    for irq in $IRQ_LIST; do
+                        mask=$(printf "%x" $((1 << (i % CPU_COUNT))))
+                        echo "$mask" > /proc/irq/${irq}/smp_affinity 2>/dev/null || true
+                        ((i++)) || true
+                    done
+                    [[ $i -gt 0 ]] && info "网卡 ${PRIMARY_NIC}: ${i} 个 IRQ 轮询绑定到 ${CPU_COUNT} 核" \
+                                    || skip "未找到 ${PRIMARY_NIC} 的 IRQ 条目（可能是虚拟化网卡）"
+
+                    # RPS: 软中断在所有 CPU 上分发（无多队列网卡时补充）
+                    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_cpus; do
+                        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
+                    done
+
+                    # XPS: 每个 TX 队列绑定对应 CPU
+                    for f in /sys/class/net/${PRIMARY_NIC}/queues/tx-*/xps_cpus; do
+                        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
+                    done
+
+                    # RPS flow limit（防止单核热点）
+                    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_flow_cnt; do
+                        [[ -f "$f" ]] && echo 4096 > "$f"
+                    done
+                    info "RPS/XPS flow → 全部 ${CPU_COUNT} 核（mask: 0x${CPU_MASK}）"
+                else
+                    skip "未检测到默认路由网卡，跳过 IRQ/RPS/XPS 配置"
+         fi
+
+         for disk in $(lsblk -d -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do
+                    SCH_FILE="/sys/block/${disk}/queue/scheduler"
+                    [[ -f "$SCH_FILE" ]] || continue
+
+                    ROTATIONAL=$(cat /sys/block/${disk}/queue/rotational 2>/dev/null || echo 1)
+                    if [[ "$ROTATIONAL" == "0" ]]; then
+                        # SSD / NVMe: none（让硬件自己排队）或 mq-deadline
+                        if grep -q "\[none\]\|none" "$SCH_FILE"; then
+                            echo none > "$SCH_FILE"
+                            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+                            info "磁盘 ${disk} (SSD/NVMe) → scheduler: none, read_ahead: 0"
+                        elif grep -q "mq-deadline" "$SCH_FILE"; then
+                            echo mq-deadline > "$SCH_FILE"
+                            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+                            info "磁盘 ${disk} (SSD) → scheduler: mq-deadline"
+                        fi
+                        # 关闭合并（SSD 随机IO无需合并）
+                        echo 2 > /sys/block/${disk}/queue/nomerges 2>/dev/null || true
+                    else
+                        # HDD: mq-deadline + 适当预读
+                        if grep -q "mq-deadline" "$SCH_FILE"; then
+                            echo mq-deadline > "$SCH_FILE"
+                            echo 256 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+                            info "磁盘 ${disk} (HDD) → scheduler: mq-deadline, read_ahead: 256K"
+                        fi
+                    fi
+                    # 队列深度（NVMe 硬件已很高，HDD 适当增大）
+                    echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
   done
 
 # udev 规则持久化（重启后生效）
@@ -482,7 +482,7 @@ EOF
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
 
   # ensure debugfs is mounted
-		if ! mountpoint -q /sys/kernel/debug; then
+                if ! mountpoint -q /sys/kernel/debug; then
     mount -t debugfs none /sys/kernel/debug
   fi
 
@@ -536,7 +536,7 @@ udpMemString="$udpMemMin $udpMemPressure $udpMemMax"
 updateSysctlParam() {
   local paramKey="$1"
   local paramValue="$2"
-    
+
   if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
       sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
   else
@@ -705,6 +705,7 @@ while true; do
     echo "13. 丢失数据包 14. 检查缓冲"
     echo "15. 检查当前设置 "
     echo "16. systemd-journald 优化 "
+    echo "17. sysctl 重新加载优化 "
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -726,6 +727,7 @@ while true; do
       14) check_buffer ;;
       15) check_settings ;;
       16) systemd_journald_optimize ;;
+      17) sysctl_p ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
