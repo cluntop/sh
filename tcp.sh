@@ -145,8 +145,7 @@ sysctl_url="https://raw.githubusercontent.com/cluntop/sh/main/conf.d/sysctl.conf
 sed -i '/^alias tcp=/d' ~/.bashrc > /dev/null 2>&1
 sed -i '/^alias tcp=/d' ~/.profile > /dev/null 2>&1
 sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
-# 修复：原来的 ./clun_tcp.sh 在 bash <(curl ...) 方式运行时当前目录下并不存在，
-# 用 "$0" 拿到本次实际执行的脚本文件本身
+
 cp -f "$0" ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
 chmod +x /usr/local/bin/tcp > /dev/null 2>&1
@@ -280,9 +279,6 @@ break_end() {
 }
 
 # ==================== 脚本更新函数 ====================
-# 修复：
-#  1. curl 加 -f，防止 404/5xx 时把错误页面当成正常脚本写入
-#  2. 更新完成后直接 exec 顶替当前进程，一步到位启动新版本菜单
 update_script() {
     echo "正在检查并下载最新版本..."
     curl -sf https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o /tmp/clun_tcp.sh
@@ -439,11 +435,6 @@ ACTION=="add|change", KERNEL=="sd[a-z]", \
     ATTR{queue/read_ahead_kb}="256"
 EOF
 
-  # 路由参数优化
-  # 修复：ip route change 要求内核里已经存在一条完全匹配的路由记录才能修改，
-  # 如果现有默认路由是 DHCP/netplan/systemd-networkd 创建的（proto 不是 change 命令
-  # 隐式假设的那种），内核找不到匹配项就会报 "RTNETLINK answers: No such file or directory"。
-  # 改用 ip route replace：有就改、没有就加，不要求精确匹配现有记录，更稳妥。
   [[ -n "$GW" && -n "$DEV" ]] && { ip route replace default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32; } 2>/dev/null
 
   # 进程文件描述符限制
@@ -460,9 +451,6 @@ EOF
   sudo modprobe nf_conntrack 2>/dev/null || true
 
   #  电源管理优化
-  # 修复：单纯在行尾加 2>/dev/null 挡不住"重定向目标本身打开失败"这种错误
-  # （常见于虚拟机里 intel_idle/pcie_aspm 参数文件存在但只读，即使是 root 也会被拒绝写入）。
-  # 用 { ... ; } 把整条语句包起来，重定向失败的报错才能被真正吞掉。
   { test -e /sys/module/intel_idle/parameters/max_cstate && echo 0 >/sys/module/intel_idle/parameters/max_cstate; } 2>/dev/null
   { test -e /sys/module/pcie_aspm/parameters/policy && echo "performance" >/sys/module/pcie_aspm/parameters/policy; } 2>/dev/null
 
@@ -474,7 +462,7 @@ EOF
   fi
 
   # define target slice in nanoseconds (e.g., 10ms for high throughput)
-  baseSliceNs=10000000
+  baseSliceNs=3000000
 
   # check if the parameter exists in the current XanMod build and apply
   schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
@@ -501,11 +489,6 @@ dpkg --list 2>/dev/null | grep linux-image | grep -v "$(uname -r)" | awk '{print
 }
 
 # ==================== 内存/连接跟踪参数计算与应用 ====================
-# 修复：原脚本存在两套互相独立、从未真正统一过的内存计算逻辑
-# （脚本开头的 tcp_low/mid/high 系列变量从未被引用，属于死代码；
-#  真正生效的是这个函数内部另一套基于"向上取整到整数 GB"的百分比算法）。
-# 这里统一成一套：直接按实际内存（不做 GB 取整）计算，逻辑更透明、
-# 也避免了"小内存机器被按大内存机器的比例计算"这种偏差。
 net_mem() {
 
 sysctlConfFile="/etc/sysctl.conf"
@@ -652,14 +635,8 @@ ln -sf /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
 ip tcp_metrics flush all > /dev/null 2>&1
 
 # 应用 sysctl 配置
-# 修复：原脚本在这一步之前就把 diff 显示完了，
-# 但 tcp_mem/udp_mem/nf_conntrack_max 这几项是在 sysctl_p() 内部的 net_mem()
-# 才会按实际内存重新计算并写入的——旧顺序会导致 diff 里看到的永远是下载模板的
-# 原始默认值，而不是真正生效的计算结果。现在把 sysctl_p 挪到 diff 展示之前，
-# 确保 diff 反映的是"最终真正生效"的完整配置差异。
 sysctl_p
 
-# 显示配置变更（此时 net_mem 已经把 tcp_mem/udp_mem/nf_conntrack_max 写好了）
 echo -e "${BLUE}→ 应用变更:${RESET}"
 diff_output=$(diff -u "$backup_bak" "$sysctl_conf")
 if [[ -z "$diff_output" ]]; then
