@@ -3,14 +3,21 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="254"
+version_test="255"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
 BLUE='\033[34m'
+GRAY='\033[90m'
+WHITE='\033[97m'
 RESET='\033[0m'
+
+# ==================== 日志辅助函数（原脚本缺失，已补全） ====================
+info() { echo -e "${GREEN}[信息]${RESET} $*"; }
+skip() { echo -e "${YELLOW}[跳过]${RESET} $*"; }
+warn() { echo -e "${YELLOW}[警告]${RESET} $*"; }
 
 # ==================== 系统检测 ====================
 if [ -f /etc/os-release ]; then
@@ -112,8 +119,7 @@ case "$OS" in
 esac
 
 # ==================== 依赖检查与安装 ====================
-# 在此添加脚本运行所需的命令，缺失将自动安装
-REQUIRED_COMMANDS="sudo bc wget ethtool dmidecode tuned"
+REQUIRED_COMMANDS="sudo wget ethtool dmidecode tuned"
 
 check_and_install() {
     for cmd in $REQUIRED_COMMANDS; do
@@ -127,7 +133,7 @@ check_and_install() {
 check_and_install
 
 # ==================== 网络接口配置 ====================
-nic=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}')
+nic=$(ip link show | awk -F': ' '/^[0-9]+: / && $2 != "lo" {print $2}' | head -n1)
 
 # ==================== 文件路径配置 ====================
 backup_bak="/etc/sysctl.conf.bak"
@@ -139,39 +145,11 @@ sysctl_url="https://raw.githubusercontent.com/cluntop/sh/main/conf.d/sysctl.conf
 sed -i '/^alias tcp=/d' ~/.bashrc > /dev/null 2>&1
 sed -i '/^alias tcp=/d' ~/.profile > /dev/null 2>&1
 sed -i '/^alias tcp=/d' ~/.bash_profile > /dev/null 2>&1
-cp -f ./clun_tcp.sh ~/clun_tcp.sh > /dev/null 2>&1
+# 修复：原来的 ./clun_tcp.sh 在 bash <(curl ...) 方式运行时当前目录下并不存在，
+# 用 "$0" 拿到本次实际执行的脚本文件本身
+cp -f "$0" ~/clun_tcp.sh > /dev/null 2>&1
 cp -f ~/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
-
-# ==================== 内存参数计算 ====================
-PAGE_SIZE=$(getconf PAGESIZE)
-
-size_mb=$(free -m | awk '/Mem:/ {print $2}')
-
-# TCP 内存阈值计算 (单位: 页)
-tcp_low=$(echo "$size_mb * 16" | bc)
-tcp_mid=$(echo "$size_mb * 32" | bc)
-tcp_high=$(echo "$size_mb * 48" | bc)
-
-# UDP 内存阈值计算 (单位: 页)
-udp_low=$(echo "$size_mb * 18" | bc)
-udp_mid=$(echo "$size_mb * 36" | bc)
-udp_high=$(echo "$size_mb * 54" | bc)
-
-# 基于总内存的 TCP/UDP 内存计算
-TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-
-# TCP 内存计算
-TCP_LOW=$((TOTAL_MEM * 2 / 3 / PAGE_SIZE))
-TCP_THRESH=$((TOTAL_MEM * 3 / 4 / PAGE_SIZE))
-TCP_HIGH=$((TOTAL_MEM * 9 / 10 / PAGE_SIZE))
-
-# UDP 内存计算（TCP 60%）
-UDP_LOW=$((TCP_LOW * 6 / 10))
-UDP_THRESH=$((TCP_THRESH * 6 / 10))
-UDP_HIGH=$((TCP_HIGH * 6 / 10))
-
-# 连接跟踪表最大值计算
-conntrack_max=$(echo "$size_mb * 4096 / 8" | bc)
+chmod +x /usr/local/bin/tcp > /dev/null 2>&1
 
 # ==================== 网络路由信息 ====================
 GW=$(ip route show default | awk '/default/ {print $3; exit}')
@@ -179,7 +157,7 @@ DEV=$(ip route show default | awk '/default/ {print $5; exit}')
 
 # ==================== 内存硬件信息 ====================
 tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
-tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc)
+tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc 2>/dev/null)
 
 
 systemd_journald_optimize() {
@@ -302,26 +280,24 @@ break_end() {
 }
 
 # ==================== 脚本更新函数 ====================
+# 修复：
+#  1. curl 加 -f，防止 404/5xx 时把错误页面当成正常脚本写入
+#  2. 更新完成后直接 exec 顶替当前进程，一步到位启动新版本菜单
 update_script() {
-local version_new=$(curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh | grep -o 'version="[0-9.]*"' | cut -d '"' -f 2)
+    echo "正在检查并下载最新版本..."
+    curl -sf https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o /tmp/clun_tcp.sh
 
-if [ "$version" = "$version_new" ]; then
-    echo "你已经是最新版本！"
-else
-    echo "发现新版本！"
-    echo "当前版本 v$version 最新版本 v$version_new"
-fi
-    echo "1. 现在更新 0. 返回菜单"
-    read -e -p "请输入你的选择: " choice
-      choice="${choice:-1}"
-      case "$choice" in
-      1)
-        curl -s https://raw.githubusercontent.com/cluntop/sh/main/tcp.sh -o /tmp/clun_tcp.sh && chmod +x /tmp/clun_tcp.sh
-        cp -f /tmp/clun_tcp.sh /usr/local/bin/tcp > /dev/null 2>&1
-        ;;
-      *) clun_tcp ;;
-    esac
-      # break_end
+    if [ ! -s /tmp/clun_tcp.sh ]; then
+        echo "下载失败，请检查网络连接"
+        return 1
+    fi
+
+    chmod +x /tmp/clun_tcp.sh
+    cp -f /tmp/clun_tcp.sh /usr/local/bin/tcp
+    cp -f /tmp/clun_tcp.sh ~/clun_tcp.sh
+
+    echo "更新完成，正在启动新版本..."
+    exec /usr/local/bin/tcp
 }
 
 # ==================== 系统限制优化 ====================
@@ -378,7 +354,7 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
 
   if systemctl is-active --quiet irqbalance 2>/dev/null; then
     systemctl stop irqbalance && systemctl disable irqbalance
-    # warn "已停止 irqbalance（手动绑定 NIC 中断，避免中断漂移）"
+    warn "已停止 irqbalance（手动绑定 NIC 中断，避免中断漂移）"
   fi
 
   PRIMARY_NIC=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
@@ -461,10 +437,10 @@ ACTION=="add|change", KERNEL=="sd[a-z]", \
 EOF
 
   # 路由参数优化
-  ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
+  [[ -n "$GW" && -n "$DEV" ]] && ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
 
   # 进程文件描述符限制
-  ss -anptl | grep -oP 'pid=\K[0-9]+' | xargs -i sudo prlimit --pid {} --nofile=1048576
+  ss -anptl 2>/dev/null | grep -oP 'pid=\K[0-9]+' | sort -u | xargs -r -I{} sudo prlimit --pid {} --nofile=1048576
 
   # 网卡参数优化
   # ethtool -C $nic rx-usecs 10 tx-usecs 10
@@ -473,11 +449,12 @@ EOF
   # ip link set dev $nic gso_max_size 16384
 
   # 加载连接跟踪模块
-  sudo modprobe ip_conntrack
+  # 修复：ip_conntrack 是 2.6.20 以前的旧模块名，现代内核（含 XanMod）已统一为 nf_conntrack
+  sudo modprobe nf_conntrack 2>/dev/null || true
 
   #  电源管理优化
-  echo 0 >/sys/module/intel_idle/parameters/max_cstate >/dev/null 2>&1
-  echo "performance" >/sys/module/pcie_aspm/parameters/policy >/dev/null 2>&1
+  test -e /sys/module/intel_idle/parameters/max_cstate && echo 0 >/sys/module/intel_idle/parameters/max_cstate 2>/dev/null
+  test -e /sys/module/pcie_aspm/parameters/policy && echo "performance" >/sys/module/pcie_aspm/parameters/policy 2>/dev/null
 
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
 
@@ -502,36 +479,46 @@ EOF
 
 # ==================== 系统垃圾清理 ====================
 cleaning_trash() {
-sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s; sudo dpkg -l | grep '^rc' | awk '{print $2}' | sudo xargs dpkg --purge; sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge; docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; rm -rf ~/Downloads/*; rm -rf ~/.cache/thumbnails/*; rm -rf ~/.mozilla/firefox/*.default-release/cache2/*; sudo apt-get clean; dpkg --list | grep linux-image | grep -v `uname -r` | awk '{print $2}' | xargs sudo apt-get remove --purge -y
+sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove -y; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s
+sudo dpkg -l | awk '/^rc/{print $2}' | xargs -r sudo dpkg --purge
+sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge -y
+command -v docker >/dev/null 2>&1 && { docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; }
+rm -rf ~/Downloads/* 2>/dev/null
+rm -rf ~/.cache/thumbnails/* 2>/dev/null
+rm -rf ~/.mozilla/firefox/*.default-release/cache2/* 2>/dev/null
+sudo apt-get clean
+dpkg --list 2>/dev/null | grep linux-image | grep -v "$(uname -r)" | awk '{print $2}' | xargs -r sudo apt-get remove --purge -y
 }
 
+# ==================== 内存/连接跟踪参数计算与应用 ====================
+# 修复：原脚本存在两套互相独立、从未真正统一过的内存计算逻辑
+# （脚本开头的 tcp_low/mid/high 系列变量从未被引用，属于死代码；
+#  真正生效的是这个函数内部另一套基于"向上取整到整数 GB"的百分比算法）。
+# 这里统一成一套：直接按实际内存（不做 GB 取整）计算，逻辑更透明、
+# 也避免了"小内存机器被按大内存机器的比例计算"这种偏差。
 net_mem() {
 
 sysctlConfFile="/etc/sysctl.conf"
 
-# fetch raw available memory in kilobytes
-rawMemTotalKb=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+# 实际物理内存（MB）
+size_mb=$(free -m | awk '/Mem:/ {print $2}')
 
-# round up memory to the nearest gigabyte to match theoretical hardware specifications
-# 1 GB = 1048576 KB
-nominalGb=$(((rawMemTotalKb + 1048575) / 1048576))
-memTotalKb=$((nominalGb * 1048576))
+# ---- TCP/UDP 内存阈值（单位：页，1页=4096字节）----
+tcp_low=$((size_mb * 16))
+tcp_mid=$((size_mb * 32))
+tcp_high=$((size_mb * 48))
 
-# calculate total memory pages using the nominal gigabyte value
-totalPages=$((memTotalKb / 4))
+udp_low=$((size_mb * 18))
+udp_mid=$((size_mb * 36))
+udp_high=$((size_mb * 54))
 
-# calculate tcp_mem thresholds: 25% of nominal ram
-tcpMemMax=$((totalPages * 25 / 100))
-tcpMemPressure=$((tcpMemMax * 85 / 100))
-tcpMemMin=$((tcpMemMax * 70 / 100))
+tcpMemString="$tcp_low $tcp_mid $tcp_high"
+udpMemString="$udp_low $udp_mid $udp_high"
 
-# calculate udp_mem thresholds: 12.5% of nominal ram
-udpMemMax=$((totalPages * 125 / 1000))
-udpMemPressure=$((udpMemMax * 75 / 100))
-udpMemMin=$((udpMemMax * 50 / 100))
-
-tcpMemString="$tcpMemMin $tcpMemPressure $tcpMemMax"
-udpMemString="$udpMemMin $udpMemPressure $udpMemMax"
+# ---- nf_conntrack_max（64位系统经典公式：RAM字节 / 8192）----
+# 换算成 size_mb 表达式：size_mb * 1024 * 1024 / 8192 = size_mb * 128
+conntrack_max=$((size_mb * 128))
+conntrack_buckets=$((conntrack_max / 4))
 
 updateSysctlParam() {
   local paramKey="$1"
@@ -546,13 +533,15 @@ updateSysctlParam() {
 
 updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
 updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
+updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
+updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
 
-# print results
-#echo "Optimization applied for XanMod Kernel (Based on Nominal RAM):"
-#echo "Raw MemTotal: $((rawMemTotalKb / 1024)) MB"
-#echo "Nominal Rounded RAM: $((memTotalKb / 1024)) MB"
-#echo "net.ipv4.tcp_mem = $tcpMemString"
-#echo "net.ipv4.udp_mem = $udpMemString"
+# print results（调试时取消注释）
+# echo "size_mb=$size_mb"
+# echo "net.ipv4.tcp_mem = $tcpMemString"
+# echo "net.ipv4.udp_mem = $udpMemString"
+# echo "net.netfilter.nf_conntrack_max = $conntrack_max"
+# echo "net.netfilter.nf_conntrack_buckets = $conntrack_buckets"
 
 }
 
@@ -581,8 +570,10 @@ sysctl_p() {
   ip neigh flush all 2>/dev/null || true
 
   MAX_CONN=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null)
-  HASHSIZE=$((MAX_CONN / 4))
-  echo "$HASHSIZE" > /sys/module/nf_conntrack/parameters/hashsize
+  if [[ -n "$MAX_CONN" ]]; then
+      HASHSIZE=$((MAX_CONN / 4))
+      [[ -w /sys/module/nf_conntrack/parameters/hashsize ]] && echo "$HASHSIZE" > /sys/module/nf_conntrack/parameters/hashsize
+  fi
 }
 
 # ==================== BBR 内核安装 ====================
@@ -617,7 +608,9 @@ cp "$sysctl_conf" "$backup_bak"
 echo -e "${GREEN}✓ 备份已保存至 $backup_bak${RESET}"
 
 # 下载新配置
-curl -s -o "$tmp_new" "$sysctl_url"
+# 修复：curl 加 -f，遇到 HTTP 4xx/5xx 时直接返回非零，
+# 避免把 "404: Not Found" 这类错误页面当成正常配置写入 /etc/sysctl.conf
+curl -sf -o "$tmp_new" "$sysctl_url"
 
 if [[ $? -ne 0 ]]; then
     echo -e "${RED}✗ 下载配置文件失败.${RESET}"
@@ -640,7 +633,7 @@ else
         elif [[ "$line" =~ ^\- && ! "$line" =~ ^\-\- ]]; then
             echo -e "${RED}$line${RESET}"
         else
-            echo -e "${WHITE:-\e[97m}$line${RESET}"
+            echo -e "${WHITE}$line${RESET}"
         fi
     done <<< "$diff_output"
 fi
@@ -667,16 +660,17 @@ read -p "→ 现在重启系统吗? [y/N]: " confirm
 }
 
 # ==================== 网络诊断函数 ====================
+# 修复：原来引用的 $nic_interface 从未被赋值，统一改用脚本前面已探测好的 $nic
 lost_packet() {
-ethtool -S $nic_interface | grep -e rx_no_buffer_count -e rx_missed_errors -e rx_fifo_errors -e rx_over_errors
+ethtool -S "$nic" | grep -e rx_no_buffer_count -e rx_missed_errors -e rx_fifo_errors -e rx_over_errors
 }
 
 check_buffer() {
-ethtool -g $nic_interface
+ethtool -g "$nic"
 }
 
 check_settings() {
-ethtool -c $nic_interface
+ethtool -c "$nic"
 }
 
 # ==================== 命令帮助信息 ====================
@@ -713,11 +707,12 @@ while true; do
     read -e -p "请输入你的选择: " choice
 
     case $choice in
+      # 修复：原来这两行把 ";" 误打成 ":"，导致 clear 从未真正执行
       1) Install_All ; clear ; exit ;;
       2) Install_limits ;;
       3) Install_systemd ;;
-      4) Install_sysctl : clear ; exit ;;
-      7) cleaning_trash : clear ; exit ;;
+      4) Install_sysctl ; clear ; exit ;;
+      7) cleaning_trash ; clear ; exit ;;
       8) tcp_info ;;
       9) Install_bbr ; clear ; exit ;;
       10) radical_sh ; clear ; exit ;;
@@ -759,5 +754,5 @@ case $1 in
     *) sleep 1 && clun_tcp ;;
 esac
 
-# sleep 1 && 
+# sleep 1 &&
 # clun_tcp
