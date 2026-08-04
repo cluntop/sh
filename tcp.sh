@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="256"
+version_test="257"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -440,7 +440,11 @@ ACTION=="add|change", KERNEL=="sd[a-z]", \
 EOF
 
   # 路由参数优化
-  [[ -n "$GW" && -n "$DEV" ]] && ip route change default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32
+  # 修复：ip route change 要求内核里已经存在一条完全匹配的路由记录才能修改，
+  # 如果现有默认路由是 DHCP/netplan/systemd-networkd 创建的（proto 不是 change 命令
+  # 隐式假设的那种），内核找不到匹配项就会报 "RTNETLINK answers: No such file or directory"。
+  # 改用 ip route replace：有就改、没有就加，不要求精确匹配现有记录，更稳妥。
+  [[ -n "$GW" && -n "$DEV" ]] && { ip route replace default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32; } 2>/dev/null
 
   # 进程文件描述符限制
   ss -anptl 2>/dev/null | grep -oP 'pid=\K[0-9]+' | sort -u | xargs -r -I{} sudo prlimit --pid {} --nofile=1048576
@@ -470,7 +474,7 @@ EOF
   fi
 
   # define target slice in nanoseconds (e.g., 10ms for high throughput)
-  baseSliceNs=3000000
+  baseSliceNs=10000000
 
   # check if the parameter exists in the current XanMod build and apply
   schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
