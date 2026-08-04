@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="255"
+version_test="256"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -374,18 +374,21 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
                                     || skip "未找到 ${PRIMARY_NIC} 的 IRQ 条目（可能是虚拟化网卡）"
 
                     # RPS: 软中断在所有 CPU 上分发（无多队列网卡时补充）
+                    # 修复：部分虚拟化网卡（如单队列 virtio-net）的这几个 sysfs 属性
+                    # 即使 -f 检测存在，实际 write() 也可能因为驱动限制而失败（ENOENT/EIO）。
+                    # 这些都是尽力而为的优化项，写入失败不应该把报错刷到终端，统一吞掉。
                     for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_cpus; do
-                        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
+                        [[ -f "$f" ]] && { echo "$CPU_MASK" > "$f"; } 2>/dev/null
                     done
 
                     # XPS: 每个 TX 队列绑定对应 CPU
                     for f in /sys/class/net/${PRIMARY_NIC}/queues/tx-*/xps_cpus; do
-                        [[ -f "$f" ]] && echo "$CPU_MASK" > "$f"
+                        [[ -f "$f" ]] && { echo "$CPU_MASK" > "$f"; } 2>/dev/null
                     done
 
                     # RPS flow limit（防止单核热点）
                     for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_flow_cnt; do
-                        [[ -f "$f" ]] && echo 4096 > "$f"
+                        [[ -f "$f" ]] && { echo 4096 > "$f"; } 2>/dev/null
                     done
                     info "RPS/XPS flow → 全部 ${CPU_COUNT} 核（mask: 0x${CPU_MASK}）"
                 else
@@ -453,8 +456,11 @@ EOF
   sudo modprobe nf_conntrack 2>/dev/null || true
 
   #  电源管理优化
-  test -e /sys/module/intel_idle/parameters/max_cstate && echo 0 >/sys/module/intel_idle/parameters/max_cstate 2>/dev/null
-  test -e /sys/module/pcie_aspm/parameters/policy && echo "performance" >/sys/module/pcie_aspm/parameters/policy 2>/dev/null
+  # 修复：单纯在行尾加 2>/dev/null 挡不住"重定向目标本身打开失败"这种错误
+  # （常见于虚拟机里 intel_idle/pcie_aspm 参数文件存在但只读，即使是 root 也会被拒绝写入）。
+  # 用 { ... ; } 把整条语句包起来，重定向失败的报错才能被真正吞掉。
+  { test -e /sys/module/intel_idle/parameters/max_cstate && echo 0 >/sys/module/intel_idle/parameters/max_cstate; } 2>/dev/null
+  { test -e /sys/module/pcie_aspm/parameters/policy && echo "performance" >/sys/module/pcie_aspm/parameters/policy; } 2>/dev/null
 
   echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
 
@@ -527,6 +533,13 @@ updateSysctlParam() {
   if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
       sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
   else
+      # 修复：如果目标文件末尾没有换行符（很多从 GitHub 下载的模板都这样），
+      # 直接 >> 追加会把新内容和文件最后一行硬拼在一起，
+      # 例如 "...reuse = 1net.netfilter.nf_conntrack_buckets = 62880" 这种语法损坏。
+      # 追加前先确保文件以换行符结尾。
+      if [[ -s "$sysctlConfFile" ]] && [[ -n "$(tail -c1 "$sysctlConfFile")" ]]; then
+          printf '\n' >> "$sysctlConfFile"
+      fi
       echo "${paramKey} = ${paramValue}" >> "$sysctlConfFile"
   fi
 }
@@ -621,7 +634,28 @@ fi
 cp "$tmp_new" "$sysctl_conf"
 echo -e "${GREEN}✓ 配置已应用.${RESET}"
 
-# 显示配置变更
+# 创建 sysctl.d 软链接
+file_sysctl="/etc/sysctl.d/99-sysctl.conf"
+if [ -L "$file_sysctl" ]; then
+    mv -f "$file_sysctl" "${file_sysctl}.bak"
+elif [ -f "$file_sysctl" ]; then
+    mv -f "$file_sysctl" "${file_sysctl}.bak"
+fi
+
+ln -sf /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
+
+# 清理 TCP 指标缓存
+ip tcp_metrics flush all > /dev/null 2>&1
+
+# 应用 sysctl 配置
+# 修复：原脚本在这一步之前就把 diff 显示完了，
+# 但 tcp_mem/udp_mem/nf_conntrack_max 这几项是在 sysctl_p() 内部的 net_mem()
+# 才会按实际内存重新计算并写入的——旧顺序会导致 diff 里看到的永远是下载模板的
+# 原始默认值，而不是真正生效的计算结果。现在把 sysctl_p 挪到 diff 展示之前，
+# 确保 diff 反映的是"最终真正生效"的完整配置差异。
+sysctl_p
+
+# 显示配置变更（此时 net_mem 已经把 tcp_mem/udp_mem/nf_conntrack_max 写好了）
 echo -e "${BLUE}→ 应用变更:${RESET}"
 diff_output=$(diff -u "$backup_bak" "$sysctl_conf")
 if [[ -z "$diff_output" ]]; then
@@ -637,22 +671,6 @@ else
         fi
     done <<< "$diff_output"
 fi
-
-# 创建 sysctl.d 软链接
-file_sysctl="/etc/sysctl.d/99-sysctl.conf"
-if [ -L "$file_sysctl" ]; then
-    mv -f "$file_sysctl" "${file_sysctl}.bak"
-elif [ -f "$file_sysctl" ]; then
-    mv -f "$file_sysctl" "${file_sysctl}.bak"
-fi
-
-ln -sf /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
-
-# 清理 TCP 指标缓存
-ip tcp_metrics flush all > /dev/null 2>&1
-
-# 应用 sysctl 配置
-sysctl_p
 
 # 询问是否重启
 read -p "→ 现在重启系统吗? [y/N]: " confirm
