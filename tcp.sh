@@ -470,7 +470,7 @@ EOF
   fi
 
   # define target slice in nanoseconds (e.g., 10ms for high throughput)
-  baseSliceNs=10000000
+  baseSliceNs=3000000
 
   # check if the parameter exists in the current XanMod build and apply
   schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
