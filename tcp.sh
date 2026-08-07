@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="257"
+version_test="258"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -554,7 +554,8 @@ sysctl_p() {
   sysctl --system >/dev/null 2>&1
   sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
   sysctl -w net.ipv6.route.flush=1 >/dev/null 2>&1
-  ip route flush cache >/dev/null 2>&1
+  sudo ip route flush cache >/dev/null 2>&1
+  sudo ip route flush all >/dev/null 2>&1
 
   # 针对 systemd-resolved (Debian/Ubuntu 常用)
   resolvectl flush-caches 2>/dev/null || true
