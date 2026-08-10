@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="259"
+version_test="260"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -703,6 +703,135 @@ read -p "→ 现在重启系统吗? [y/N]: " confirm
 [[ "$confirm" =~ ^[Yy]$ ]] && reboot
 }
 
+# ==================== conf.d/test 配置选择与应用 ====================
+# 从 https://github.com/cluntop/sh/tree/main/conf.d/test 拉取配置清单，
+# 选择后下载替换 /etc/sysctl.conf 并加载
+sysctl_select() {
+    local list_file="/tmp/sysctl_remote.list"
+    local api_url="https://api.github.com/repos/cluntop/sh/contents/conf.d/test"
+    local choice entry sel_name sel_url diff_output confirm
+
+    # 直接从 GitHub API 拉取最新文件清单（纯 curl 解析，不依赖 python）
+    if ! curl -sf --connect-timeout 10 --max-time 20 -H "User-Agent: curl" "$api_url" -o /tmp/sysctl_dir.json; then
+        echo -e "${RED}✗ 获取远程配置清单失败，请检查网络后重试${RESET}"
+        echo -e "${GRAY}  $api_url${RESET}"
+        read -n 1 -s -r -p "按任意键返回..."
+        return 1
+    fi
+
+    # 用 grep/sed 提取 JSON 中的 name 与 download_url 字段，
+    # 生成 "序号|文件名|下载地址" 清单（两次提取次序一致，与 API 返回逐项对应）
+    grep -o '"name": *"[^"]*"' /tmp/sysctl_dir.json \
+        | sed 's/.*"name": *"//; s/"$//' > /tmp/sysctl_names.tmp
+    grep -o '"download_url": *"[^"]*"' /tmp/sysctl_dir.json \
+        | sed 's/.*"download_url": *"//; s/"$//' > /tmp/sysctl_urls.tmp
+    paste -d'|' /tmp/sysctl_names.tmp /tmp/sysctl_urls.tmp \
+        | nl -w1 -s'|' > "$list_file"
+    rm -f /tmp/sysctl_dir.json /tmp/sysctl_names.tmp /tmp/sysctl_urls.tmp
+
+    if [[ ! -s "$list_file" ]]; then
+        echo -e "${RED}✗ 未解析到 conf.d/test 中的配置文件${RESET}"
+        read -n 1 -s -r -p "按任意键返回..."
+        return 1
+    fi
+
+    while true; do
+        clear
+        echo "========================================"
+        echo "     内核配置选择 (conf.d/test)"
+        echo "========================================"
+        while IFS='|' read -r idx name dl; do
+            printf "  %s. %s\n" "$idx" "$name"
+        done < "$list_file"
+        echo "----------------------------------------"
+        echo "  0. 返回上级菜单"
+        echo "========================================"
+
+        read -e -p "请输入配置编号 [0]: " choice
+
+        if [[ "$choice" == "0" ]]; then
+            return 0
+        fi
+
+        if [[ ! "$choice" =~ ^[0-9]+$ ]]; then
+            echo "无效输入，请输入配置编号！"
+            sleep 1
+            continue
+        fi
+
+        entry=$(grep -E "^${choice}\|" "$list_file")
+        if [[ -z "$entry" ]]; then
+            echo "无效的配置编号，请重新选择！"
+            sleep 1
+            continue
+        fi
+
+        sel_name=$(echo "$entry" | cut -d'|' -f2)
+        sel_url=$(echo "$entry" | cut -d'|' -f3-)
+
+        echo ""
+        echo "已选择: ${sel_name}"
+        echo "下载: ${sel_url}"
+
+        # 备份当前配置
+        [[ -f "$backup_bak" ]] && rm -f "$backup_bak"
+        cp "$sysctl_conf" "$backup_bak"
+        echo -e "${GREEN}✓ 备份已保存至 $backup_bak${RESET}"
+
+        # 下载所选配置
+        curl -sfL -o "$tmp_new" "$sel_url"
+        if [[ $? -ne 0 ]]; then
+            echo -e "${RED}✗ 下载配置文件失败: ${sel_name}${RESET}"
+            sleep 1
+            continue
+        fi
+
+        # 应用新配置
+        cp "$tmp_new" "$sysctl_conf"
+        echo -e "${GREEN}✓ 配置已应用: ${sel_name}${RESET}"
+
+        # 创建 sysctl.d 软链接
+        file_sysctl="/etc/sysctl.d/99-sysctl.conf"
+        if [ -L "$file_sysctl" ]; then
+            mv -f "$file_sysctl" "${file_sysctl}.bak"
+        elif [ -f "$file_sysctl" ]; then
+            mv -f "$file_sysctl" "${file_sysctl}.bak"
+        fi
+        ln -sf /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
+
+        # 清理 TCP 指标缓存
+        ip tcp_metrics flush all > /dev/null 2>&1
+
+        # 加载配置
+        sysctl_p
+
+        echo -e "${BLUE}→ 应用变更:${RESET}"
+        diff_output=$(diff -u "$backup_bak" "$sysctl_conf")
+        if [[ -z "$diff_output" ]]; then
+            echo -e "${GRAY}(没有显示更新)${RESET}"
+        else
+            while IFS= read -r line; do
+                if [[ "$line" =~ ^\+ && ! "$line" =~ ^\+\+ ]]; then
+                    echo -e "${GREEN}$line${RESET}"
+                elif [[ "$line" =~ ^\- && ! "$line" =~ ^\-\- ]]; then
+                    echo -e "${RED}$line${RESET}"
+                else
+                    echo -e "${WHITE}$line${RESET}"
+                fi
+            done <<< "$diff_output"
+        fi
+
+        # 询问是否重启
+        read -p "→ 现在重启系统吗? [y/N]: " confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] && reboot
+
+        echo ""
+        echo "按任意键返回配置选择菜单..."
+        read -n 1 -s -r -p ""
+        echo ""
+    done
+}
+
 # ==================== 网络诊断函数 ====================
 # 修复：原来引用的 $nic_interface 从未被赋值，统一改用脚本前面已探测好的 $nic
 lost_packet() {
@@ -724,6 +853,7 @@ echo "以下是命令参考用例："
 echo "启动脚本 tcp"
 echo "优化内核 tcp tcp"
 echo "优化内核任务 tcp sys"
+echo "选择内核配置 tcp conf"
 }
 
 # ==================== 主菜单 ====================
@@ -736,6 +866,7 @@ while true; do
     echo "---"
     echo "1. 优化全部 2. 优化限制"
     echo "3. 优化安全 4. 优化内核"
+    echo "5. 内核配置选择"
     echo "---"
     echo "7. 清理垃圾 8. 命令参考"
     echo "9. 安装内核 10. 激进内核"
@@ -756,6 +887,7 @@ while true; do
       2) Install_limits ;;
       3) Install_systemd ;;
       4) Install_sysctl ; clear ; exit ;;
+      5) sysctl_select ;;
       7) cleaning_trash ; clear ; exit ;;
       8) tcp_info ;;
       9) Install_bbr ; clear ; exit ;;
@@ -796,6 +928,7 @@ case $1 in
     ;;
     "sysctl") Install_sysctl ;;
     "tcp") Install_sysctl ;;
+    "conf") sysctl_select ;;
     *) sleep 1 && clun_tcp ;;
 esac
 
