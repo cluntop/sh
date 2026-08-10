@@ -697,7 +697,7 @@ while true; do
     echo "9. 安装内核 10. 激进内核"
     echo "11. XXX 12. 内核脚本"
     echo "13. 丢失数据包 14. 检查缓冲"
-    echo "15. 检查当前设置 "
+    echo "15. 检查当前设置 18. TCP 调优"
     echo "16. systemd-journald 优化 "
     echo "17. sysctl 重新加载优化 "
     echo "000. 科技 Lion 脚本工具箱"
@@ -723,6 +723,7 @@ while true; do
       15) check_settings ;;
       16) systemd_journald_optimize ;;
       17) sysctl_p ; clear ; exit ;;
+      18) bash <(curl -fsSL https://raw.githubusercontent.com/Kylin010/tcpfit/main/tcpfit.sh) ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
