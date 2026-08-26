@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="260"
+version_test="261"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -512,9 +512,9 @@ avail_mb=$(awk '/MemAvailable:/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)
 
 # ---- 基础比例 ----
 # TCP: low=6% available, mid=12%, high=18%
-tcp_low=$((avail_mb * 16))
-tcp_mid=$((avail_mb * 32))
-tcp_high=$((avail_mb * 48))
+tcp_low=$((size_mb * 16))
+tcp_mid=$((size_mb * 32))
+tcp_high=$((size_mb * 48))
 
 # UDP: TCP 的 60%（QUIC 用量通常小于 TCP 总和）
 udp_low=$((tcp_low * 6 / 10))
