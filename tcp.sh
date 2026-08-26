@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="261"
+version_test="262"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -125,7 +125,7 @@ case "$OS" in
 esac
 
 # ==================== 依赖检查与安装 ====================
-REQUIRED_COMMANDS="sudo wget ethtool dmidecode tuned"
+REQUIRED_COMMANDS="sudo curl wget ethtool"
 
 check_and_install() {
     for cmd in $REQUIRED_COMMANDS; do
@@ -240,7 +240,7 @@ EOF
           3)
             echo "正在应用: 模式 3 (低延迟 不压缩)"
             cat <<EOF >> "$CONF_FILE"
-Storage=volatile
+Storage=persistent
 Compress=no
 RuntimeMaxUse=256M
 RuntimeKeepFree=64M
@@ -254,7 +254,7 @@ EOF
           4)
             echo "正在应用: 模式 4 (低延迟 压缩)"
             cat <<EOF >> "$CONF_FILE"
-Storage=volatile
+Storage=persistent
 SystemMaxUse=256M
 RuntimeMaxUse=48M
 SystemKeepFree=1G
@@ -365,6 +365,15 @@ echo "session required pam_limits.so" >> /etc/pam.d/common-session
   PRIMARY_NIC=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
   CPU_COUNT=$(nproc)
   CPU_MASK=$(printf "%x" $(( (1 << CPU_COUNT) - 1 )))
+  if [ "$CPU_COUNT" -le 64 ]; then
+    CPU_MASK=$(printf "%x" $(( (1 << CPU_COUNT) - 1 )))
+else
+    FULL=$(printf "%x" $(( (1 << 64) - 1 )))
+    GROUPS=$((CPU_COUNT / 64))
+    REMAIN=$((CPU_COUNT % 64))
+    MASK="$FULL"; [ $REMAIN -gt 0 ] && REMAIN_MASK=$(printf "%x" $(( (1 << REMAIN) - 1 ))) || REMAIN_MASK=""
+    CPU_MASK="${REMAIN_MASK:+$REMAIN_MASK,}$(for i in $(seq 1 $GROUPS); do echo -n "$FULL,"; done | sed 's/,$//')"
+fi
 
   if [[ -n "$PRIMARY_NIC" ]]; then
                     # IRQ → 轮询绑核
@@ -496,7 +505,7 @@ rm -rf ~/Downloads/* 2>/dev/null
 rm -rf ~/.cache/thumbnails/* 2>/dev/null
 rm -rf ~/.mozilla/firefox/*.default-release/cache2/* 2>/dev/null
 sudo apt-get clean
-dpkg --list 2>/dev/null | grep linux-image | grep -v "$(uname -r)" | awk '{print $2}' | xargs -r sudo apt-get remove --purge -y
+dpkg --list | awk '/^ii +linux-image-[0-9]/ {print $2}' | sort -V | head -n -2 | grep -v "$(uname -r)" | xargs -r sudo apt-get remove --purge -y
 }
 
 # ==================== 内存/连接跟踪参数计算与应用 ====================
@@ -505,7 +514,7 @@ net_mem() {
 sysctlConfFile="/etc/sysctl.conf"
 
 size_mb=$(free -m | awk '/Mem:/ {print $2}')
-  
+
 # 读取可用内存（MB），fallback 到总内存
 avail_mb=$(awk '/MemAvailable:/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)
 [ -z "$avail_mb" ] && avail_mb=$(free -m | awk '/Mem:/ {print $2}')
@@ -545,8 +554,12 @@ fi
 
 # ---- 单连接上限（必须联动，防止击穿全局）----
 # rmem_max = tcp_high / 32, wmem_max = tcp_high / 32
-tcp_rmem_max=$((tcp_high / 32))
-tcp_wmem_max=$((tcp_high / 32))
+tcp_rmem_max=$((tcp_high * 4096 / 32))
+tcp_wmem_max=$tcp_rmem_max
+
+# 夹逼：最低 4MB，最高 64MB（高 BDP 友好）
+[ $tcp_rmem_max -lt 4194304 ]  && tcp_rmem_max=4194304
+[ $tcp_rmem_max -gt 67108864 ] && tcp_rmem_max=67108864
 
 # 单连接上限最低 4MB（1048576），最高 128MB（33554432）
 [ $tcp_rmem_max -lt 1048576 ] && tcp_rmem_max=1048576
@@ -598,13 +611,13 @@ updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
 sysctl_p() {
 
   net_mem
-  
+
   sysctl -p >/dev/null 2>&1
   sysctl --system >/dev/null 2>&1
   sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
   sysctl -w net.ipv6.route.flush=1 >/dev/null 2>&1
   sudo ip route flush cache >/dev/null 2>&1
-  
+
   resolvectl flush-caches 2>/dev/null || true
   systemctl restart nscd 2>/dev/null || service nscd restart 2>/dev/null || true
   sudo nscd -i hosts 2>/dev/null || true
