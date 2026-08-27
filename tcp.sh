@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.7"
-version_test="267"
+version_test="268"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -388,24 +388,6 @@ updateSysctlParam() {
         fi
         echo "${paramKey} = ${paramValue}" >> "$targetFile"
     fi
-}
-
-updateSysctlParam() {
-  local paramKey="$1"
-  local paramValue="$2"
-
-  if grep -q "^[[:space:]]*${paramKey}\b" "$sysctlConfFile"; then
-      sed -i "s|^[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$sysctlConfFile"
-  else
-      # 修复：如果目标文件末尾没有换行符（很多从 GitHub 下载的模板都这样），
-      # 直接 >> 追加会把新内容和文件最后一行硬拼在一起，
-      # 例如 "...reuse = 1net.netfilter.nf_conntrack_buckets = 62880" 这种语法损坏。
-      # 追加前先确保文件以换行符结尾。
-      if [[ -s "$sysctlConfFile" ]] && [[ -n "$(tail -c1 "$sysctlConfFile")" ]]; then
-          printf '\n' >> "$sysctlConfFile"
-      fi
-      echo "${paramKey} = ${paramValue}" >> "$sysctlConfFile"
-  fi
 }
 
 # updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
