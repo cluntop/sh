@@ -1,9 +1,10 @@
 #!/bin/bash
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
+set -euo pipefail
 
 version="1.2.7"
-version_test="264"
+version_test="265"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -412,8 +413,6 @@ updateSysctlParam() {
 # echo "net.ipv4.udp_mem = $udpMemString"
 # echo "net.netfilter.nf_conntrack_max = $conntrack_max"
 # echo "net.netfilter.nf_conntrack_buckets = $conntrack_buckets"
-
-}
 
 # ==================== Sysctl 配置应用 ====================
 sysctl_p() {
