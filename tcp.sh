@@ -1,10 +1,10 @@
 #!/bin/bash
 # Issues https://clun.top
 # bash <(curl -sL clun.top)
-set -euo pipefail
+# set -euo pipefail
 
 version="1.2.7"
-version_test="265"
+version_test="266"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
