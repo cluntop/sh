@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="263"
+version_test="264"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -26,15 +26,14 @@ warn() { echo -e "${YELLOW}[警告]${RESET} $*"; }
 skip() { echo -e "${GRAY}[跳过]${RESET} $*"; }
 
 # ==================== 系统检测 ====================
-IS_VIRTUALIZED=0
-if [[ -d /proc/vz ]] || grep -qE "hypervisor|virtual|kvm|xen|vmware" /proc/cpuinfo 2>/dev/null; then
-    IS_VIRTUALIZED=1
-    warn "检测到虚拟化环境，跳过硬件级优化 (irqbalance/governor)"
-fi
-
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$ID
+    OS_VERSION=$VERSION_ID
+    OS_NAME=$PRETTY_NAME
+elif [ -f /etc/redhat-release ]; then
+    OS="rhel"
+    OS_NAME=$(cat /etc/redhat-release)
 else
     OS="unknown"
 fi
