@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.7"
-version_test="266"
+version_test="267"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -331,7 +331,7 @@ Install_systemd() {
 
 }
 
-# ==================== 内存参数计算 ====================
+# ==================== 内存参数计算与应用 ====================
 net_mem() {
     local size_mb avail_mb
     size_mb=$(free -m | awk '/Mem:/ {print $2}')
@@ -340,14 +340,14 @@ net_mem() {
 
     # 使用可用内存计算，避免 OOM
     local base=$avail_mb
-    [[ "$base" -lt 512 ]] && base=$size_mb  # fallback
+    [[ "$base" -lt 512 ]] && base=$size_mb
 
-    # TCP mem (页): low=6%, mid=12%, high=18% of available
+    # TCP mem (页): low=15页/MB, mid=30页, high=60页 (约 6%/12%/24%)
     local tcp_low=$((base * 15))
     local tcp_mid=$((base * 30))
     local tcp_high=$((base * 60))
 
-    # 封顶保护 (16GB / 8GB pages)
+    # 封顶保护 (16GB pages)
     [[ $tcp_high -gt 4194304 ]] && { tcp_high=4194304; tcp_mid=2796202; tcp_low=1398101; }
 
     # 保底 (小内存)
@@ -361,27 +361,33 @@ net_mem() {
     local udp_high=$((tcp_high * 6 / 10))
     [[ $udp_high -gt 2097152 ]] && { udp_high=2097152; udp_mid=1398101; udp_low=699050; }
 
-    # 单连接上限: 与全局匹配，防止击穿
-    # 高 BDP 场景允许较大缓冲，但封顶 64MB 防止单连接爆内存
-    local tcp_rmem_max=$((tcp_high * 4096 / 32))
-    [[ $tcp_rmem_max -lt 4194304 ]] && tcp_rmem_max=4194304
-    [[ $tcp_rmem_max -gt 67108864 ]] && tcp_rmem_max=67108864
-
-    local tcp_wmem_max=$tcp_rmem_max
-    [[ $tcp_wmem_max -lt 4194304 ]] && tcp_wmem_max=4194304
-    [[ $tcp_wmem_max -gt 67108864 ]] && tcp_wmem_max=67108864
-
-    # 写入 sysctl
+    # 写入 sysctl（存在则替换，不存在则追加）
     updateSysctlParam "net.ipv4.tcp_mem" "$tcp_low $tcp_mid $tcp_high"
     updateSysctlParam "net.ipv4.udp_mem" "$udp_low $udp_mid $udp_high"
-    # updateSysctlParam "net.core.rmem_max" "$tcp_rmem_max"
-    # updateSysctlParam "net.core.wmem_max" "$tcp_wmem_max"
 
     # nf_conntrack: 64位经典公式 RAM/8192 bytes = MB*128
     local conntrack_max=$((size_mb * 128))
     local conntrack_buckets=$((conntrack_max / 4))
     updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
     updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
+}
+
+updateSysctlParam() {
+    local paramKey="$1"
+    local paramValue="$2"
+    local targetFile="$sysctl_conf"   # ← 修复 Bug 1：使用脚本已定义的变量
+
+    # ← 修复 Bug 2：匹配行首可选空白 + 可选注释 + 可选空白 + 参数名
+    if grep -qE "^[[:space:]]*#?[[:space:]]*${paramKey}\b" "$targetFile"; then
+        # ← 修复 Bug 3：sed 加 -E 启用扩展正则，同时去掉可能存在的注释标记
+        sed -i -E "s|^[[:space:]]*#?[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$targetFile"
+    else
+        # 不存在则追加，确保文件末尾有换行
+        if [[ -s "$targetFile" ]] && [[ -n "$(tail -c1 "$targetFile")" ]]; then
+            printf '\n' >> "$targetFile"
+        fi
+        echo "${paramKey} = ${paramValue}" >> "$targetFile"
+    fi
 }
 
 updateSysctlParam() {
