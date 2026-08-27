@@ -3,7 +3,7 @@
 # bash <(curl -sL clun.top)
 
 version="1.2.7"
-version_test="262"
+version_test="263"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -22,18 +22,19 @@ fi
 
 # ==================== 日志辅助函数（原脚本缺失，已补全） ====================
 info() { echo -e "${GREEN}[信息]${RESET} $*"; }
-skip() { echo -e "${YELLOW}[跳过]${RESET} $*"; }
 warn() { echo -e "${YELLOW}[警告]${RESET} $*"; }
+skip() { echo -e "${GRAY}[跳过]${RESET} $*"; }
 
 # ==================== 系统检测 ====================
+IS_VIRTUALIZED=0
+if [[ -d /proc/vz ]] || grep -qE "hypervisor|virtual|kvm|xen|vmware" /proc/cpuinfo 2>/dev/null; then
+    IS_VIRTUALIZED=1
+    warn "检测到虚拟化环境，跳过硬件级优化 (irqbalance/governor)"
+fi
+
 if [ -f /etc/os-release ]; then
     . /etc/os-release
     OS=$ID
-    OS_VERSION=$VERSION_ID
-    OS_NAME=$PRETTY_NAME
-elif [ -f /etc/redhat-release ]; then
-    OS="rhel"
-    OS_NAME=$(cat /etc/redhat-release)
 else
     OS="unknown"
 fi
@@ -41,104 +42,36 @@ fi
 # ==================== 包管理器配置 ====================
 case "$OS" in
     ubuntu|debian|linuxmint|pop)
-        PKG_MANAGER="apt"
         PKG_INSTALL="apt-get install -y"
         PKG_UPDATE="apt-get update"
-        PKG_UPGRADE="apt-get upgrade -y"
-        PKG_REMOVE="apt-get remove -y"
-        PKG_CLEAN="apt-get autoremove -y"
-        PKG_SEARCH="apt-cache search"
-        PKG_LIST="dpkg -l"
-        PKG_CHECK="dpkg -l | grep"
         ;;
-    centos|rhel|rocky|almalinux)
+    centos|rhel|rocky|almalinux|fedora)
         if command -v dnf &> /dev/null; then
-            PKG_MANAGER="dnf"
             PKG_INSTALL="dnf install -y"
-            PKG_UPDATE="dnf check-update"
-            PKG_UPGRADE="dnf upgrade -y"
-            PKG_REMOVE="dnf remove -y"
-            PKG_CLEAN="dnf autoremove -y"
-            PKG_SEARCH="dnf search"
-            PKG_LIST="dnf list installed"
-            PKG_CHECK="rpm -qa | grep"
         else
-            PKG_MANAGER="yum"
             PKG_INSTALL="yum install -y"
-            PKG_UPDATE="yum check-update"
-            PKG_UPGRADE="yum update -y"
-            PKG_REMOVE="yum remove -y"
-            PKG_CLEAN="yum autoremove -y"
-            PKG_SEARCH="yum search"
-            PKG_LIST="yum list installed"
-            PKG_CHECK="rpm -qa | grep"
         fi
         ;;
-    fedora)
-        PKG_MANAGER="dnf"
-        PKG_INSTALL="dnf install -y"
-        PKG_UPDATE="dnf check-update"
-        PKG_UPGRADE="dnf upgrade -y"
-        PKG_REMOVE="dnf remove -y"
-        PKG_CLEAN="dnf autoremove -y"
-        PKG_SEARCH="dnf search"
-        PKG_LIST="dnf list installed"
-        PKG_CHECK="rpm -qa | grep"
-        ;;
-    arch|manjaro|endeavouros)
-        PKG_MANAGER="pacman"
+    arch|manjaro)
         PKG_INSTALL="pacman -S --noconfirm"
-        PKG_UPDATE="pacman -Sy"
-        PKG_UPGRADE="pacman -Syu --noconfirm"
-        PKG_REMOVE="pacman -R --noconfirm"
-        PKG_CLEAN="pacman -Sc --noconfirm"
-        PKG_SEARCH="pacman -Ss"
-        PKG_LIST="pacman -Q"
-        PKG_CHECK="pacman -Q | grep"
         ;;
     alpine)
-        PKG_MANAGER="apk"
         PKG_INSTALL="apk add"
-        PKG_UPDATE="apk update"
-        PKG_UPGRADE="apk upgrade"
-        PKG_REMOVE="apk del"
-        PKG_CLEAN="apk cache clean"
-        PKG_SEARCH="apk search"
-        PKG_LIST="apk info"
-        PKG_CHECK="apk info | grep"
-        ;;
-    opensuse*)
-        PKG_MANAGER="zypper"
-        PKG_INSTALL="zypper install -y"
-        PKG_UPDATE="zypper refresh"
-        PKG_UPGRADE="zypper update -y"
-        PKG_REMOVE="zypper remove -y"
-        PKG_CLEAN="zypper clean"
-        PKG_SEARCH="zypper search"
-        PKG_LIST="zypper se --installed-only"
-        PKG_CHECK="rpm -qa | grep"
         ;;
     *)
-        PKG_MANAGER="unknown"
         PKG_INSTALL="echo 'Unknown package manager'"
         ;;
 esac
 
-# ==================== 依赖检查与安装 ====================
-REQUIRED_COMMANDS="sudo curl wget ethtool"
+# ==================== 依赖检查 ====================
+for cmd in curl wget ethtool ip awk sysctl; do
+    if ! command -v "$cmd" &> /dev/null; then
+        warn "缺少命令: $cmd，尝试安装..."
+        $PKG_INSTALL "$cmd" 2>/dev/null || true
+    fi
+done
 
-check_and_install() {
-    for cmd in $REQUIRED_COMMANDS; do
-        if ! command -v "$cmd" &> /dev/null; then
-            echo -e "${YELLOW}缺少命令: $cmd，正在安装...${RESET}"
-            $PKG_INSTALL $cmd
-        fi
-    done
-}
-
-check_and_install
-
-# ==================== 网络接口配置 ====================
+# ==================== 网络接口检测 ====================
 nic=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
 [[ -z "$nic" ]] && nic=$(ip link show | awk -F': ' '/^[0-9]+: / {print $2}' | grep -v -E '^(lo|docker|virbr|veth|br-|tun|wg)' | head -n1)
 
@@ -321,259 +254,135 @@ root hard nofile unlimited
 * soft core 0
 * hard core 0
 EOF
+
+    # PAM 限制模块
+    if [ -f /etc/pam.d/common-session ]; then
+        if ! grep -q "pam_limits.so" /etc/pam.d/common-session; then
+            echo "session required pam_limits.so" >> /etc/pam.d/common-session
+        fi
+    fi
+    if [ -f /etc/pam.d/common-session-noninteractive ]; then
+        if ! grep -q "pam_limits.so" /etc/pam.d/common-session-noninteractive; then
+            echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive
+        fi
+    fi
+    info "limits.conf 已配置"
 }
 
 # ==================== 系统服务优化 ====================
 Install_systemd() {
+    # 透明大页 — 对高并发网络有益
+    if [[ -f /sys/kernel/mm/transparent_hugepage/enabled ]]; then
+        echo never >/sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
+        echo never >/sys/kernel/mm/transparent_hugepage/defrag 2>/dev/null || true
+        echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag 2>/dev/null || true
+    fi
 
-# 配置 PAM 限制模块
-sed -i '/^session required pam_limits.so/d' /etc/pam.d/common-session-noninteractive 2>/dev/null
-echo "session required pam_limits.so" >> /etc/pam.d/common-session-noninteractive
+    # CPU 性能模式 — 仅物理机
+    if [[ "$IS_VIRTUALIZED" -eq 0 ]]; then
+        if [[ -f /sys/devices/system/cpu/cpufreq/scaling_governor ]]; then
+            echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor >/dev/null 2>&1 || true
+        fi
+        if [[ -f /sys/devices/system/cpu/cpufreq/boost ]]; then
+            echo 1 > /sys/devices/system/cpu/cpufreq/boost 2>/dev/null || true
+        fi
+        if [[ -f /sys/devices/system/cpu/intel_pstate/no_turbo ]]; then
+            echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null || true
+        fi
+        cpupower idle-set -D 1 &>/dev/null || true
+    fi
 
-sed -i '/^session required pam_limits.so/d' /etc/pam.d/common-session 2>/dev/null
-echo "session required pam_limits.so" >> /etc/pam.d/common-session
+    # irqbalance — 虚拟化环境保持原状，物理机视情况
+    if [[ "$IS_VIRTUALIZED" -eq 0 ]]; then
+        if systemctl is-active --quiet irqbalance 2>/dev/null; then
+            warn "物理机检测到 irqbalance 运行中。若已手动绑核，请自行停止。"
+        fi
+    fi
 
-  # 透明大页设置
-  echo never >/sys/kernel/mm/transparent_hugepage/enabled
-  echo never >/sys/kernel/mm/transparent_hugepage/defrag
-
-  # CPU 性能模式设置
-  test -e /sys/devices/system/cpu/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor
-  test -e /sys/devices/system/cpu/cpufreq/policy0/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpufreq/policy*/scaling_governor
-  test -e /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor && echo performance | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
-
-  test -e /sys/devices/system/cpu/cpufreq/boost && echo 1 > /sys/devices/system/cpu/cpufreq/boost
-  test -e /sys/devices/system/cpu/intel_pstate/no_turbo && echo 0 > /sys/devices/system/cpu/intel_pstate/no_turbo
-  test -e /sys/devices/system/cpu/intel_pstate/max_perf_pct && echo 100 > /sys/devices/system/cpu/intel_pstate/max_perf_pct
-  test -n "$(which auditctl)" && auditctl -D && auditctl -a never,task >/dev/null 2>&1
-
-  # 关闭 THP khugepaged 扫描（减少后台开销）
-  echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag &>/dev/null
-  cpupower idle-set -D 1 &>/dev/null
-
-  for cpu in /sys/devices/system/cpu/cpu[0-9]*; do
-    for state in "$cpu"/cpuidle/state[2-9]; do
-        [[ -f "$state/disable" ]] && echo 1 > "$state/disable"
+    # 磁盘调度器优化
+    for disk in $(lsblk -d -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do
+        SCH_FILE="/sys/block/${disk}/queue/scheduler"
+        [[ -f "$SCH_FILE" ]] || continue
+        ROTATIONAL=$(cat /sys/block/${disk}/queue/rotational 2>/dev/null || echo 1)
+        if [[ "$ROTATIONAL" == "0" ]]; then
+            if grep -q "\[none\]" "$SCH_FILE" 2>/dev/null; then
+                echo none > "$SCH_FILE" 2>/dev/null || true
+                echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
+            elif grep -q "mq-deadline" "$SCH_FILE" 2>/dev/null; then
+                echo mq-deadline > "$SCH_FILE" 2>/dev/null || true
+            fi
+            echo 2 > /sys/block/${disk}/queue/nomerges 2>/dev/null || true
+        fi
+        echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
     done
-  done
 
-  if systemctl is-active --quiet irqbalance 2>/dev/null; then
-    systemctl stop irqbalance && systemctl disable irqbalance
-    warn "已停止 irqbalance（手动绑定 NIC 中断，避免中断漂移）"
-  fi
+    # 加载连接跟踪模块（现代内核）
+    modprobe nf_conntrack 2>/dev/null || true
 
-  PRIMARY_NIC=$(ip route show default 2>/dev/null | awk '/default/ {print $5; exit}')
-  CPU_COUNT=$(nproc)
-  CPU_MASK=$(printf "%x" $(( (1 << CPU_COUNT) - 1 )))
-  if [ "$CPU_COUNT" -le 64 ]; then
-    CPU_MASK=$(printf "%x" $(( (1 << CPU_COUNT) - 1 )))
-else
-    FULL=$(printf "%x" $(( (1 << 64) - 1 )))
-    GROUPS=$((CPU_COUNT / 64))
-    REMAIN=$((CPU_COUNT % 64))
-    MASK="$FULL"; [ $REMAIN -gt 0 ] && REMAIN_MASK=$(printf "%x" $(( (1 << REMAIN) - 1 ))) || REMAIN_MASK=""
-    CPU_MASK="${REMAIN_MASK:+$REMAIN_MASK,}$(for i in $(seq 1 $GROUPS); do echo -n "$FULL,"; done | sed 's/,$//')"
-fi
-
-  if [[ -n "$PRIMARY_NIC" ]]; then
-                    # IRQ → 轮询绑核
-                    IRQ_LIST=$(grep -w "${PRIMARY_NIC}" /proc/interrupts 2>/dev/null | awk -F: '{print $1}' | tr -d ' ')
-                    i=0
-                    for irq in $IRQ_LIST; do
-                        mask=$(printf "%x" $((1 << (i % CPU_COUNT))))
-                        echo "$mask" > /proc/irq/${irq}/smp_affinity 2>/dev/null || true
-                        ((i++)) || true
-                    done
-                    [[ $i -gt 0 ]] && info "网卡 ${PRIMARY_NIC}: ${i} 个 IRQ 轮询绑定到 ${CPU_COUNT} 核" \
-                                    || skip "未找到 ${PRIMARY_NIC} 的 IRQ 条目（可能是虚拟化网卡）"
-
-                    # RPS: 软中断在所有 CPU 上分发（无多队列网卡时补充）
-                    # 修复：部分虚拟化网卡（如单队列 virtio-net）的这几个 sysfs 属性
-                    # 即使 -f 检测存在，实际 write() 也可能因为驱动限制而失败（ENOENT/EIO）。
-                    # 这些都是尽力而为的优化项，写入失败不应该把报错刷到终端，统一吞掉。
-                    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_cpus; do
-                        [[ -f "$f" ]] && { echo "$CPU_MASK" > "$f"; } 2>/dev/null
-                    done
-
-                    # XPS: 每个 TX 队列绑定对应 CPU
-                    for f in /sys/class/net/${PRIMARY_NIC}/queues/tx-*/xps_cpus; do
-                        [[ -f "$f" ]] && { echo "$CPU_MASK" > "$f"; } 2>/dev/null
-                    done
-
-                    # RPS flow limit（防止单核热点）
-                    for f in /sys/class/net/${PRIMARY_NIC}/queues/rx-*/rps_flow_cnt; do
-                        [[ -f "$f" ]] && { echo 4096 > "$f"; } 2>/dev/null
-                    done
-                    info "RPS/XPS flow → 全部 ${CPU_COUNT} 核（mask: 0x${CPU_MASK}）"
-                else
-                    skip "未检测到默认路由网卡，跳过 IRQ/RPS/XPS 配置"
-         fi
-
-         for disk in $(lsblk -d -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do
-                    SCH_FILE="/sys/block/${disk}/queue/scheduler"
-                    [[ -f "$SCH_FILE" ]] || continue
-
-                    ROTATIONAL=$(cat /sys/block/${disk}/queue/rotational 2>/dev/null || echo 1)
-                    if [[ "$ROTATIONAL" == "0" ]]; then
-                        # SSD / NVMe: none（让硬件自己排队）或 mq-deadline
-                        if grep -q "\[none\]\|none" "$SCH_FILE"; then
-                            echo none > "$SCH_FILE"
-                            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
-                            info "磁盘 ${disk} (SSD/NVMe) → scheduler: none, read_ahead: 0"
-                        elif grep -q "mq-deadline" "$SCH_FILE"; then
-                            echo mq-deadline > "$SCH_FILE"
-                            echo 0 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
-                            info "磁盘 ${disk} (SSD) → scheduler: mq-deadline"
-                        fi
-                        # 关闭合并（SSD 随机IO无需合并）
-                        echo 2 > /sys/block/${disk}/queue/nomerges 2>/dev/null || true
-                    else
-                        # HDD: mq-deadline + 适当预读
-                        if grep -q "mq-deadline" "$SCH_FILE"; then
-                            echo mq-deadline > "$SCH_FILE"
-                            echo 256 > /sys/block/${disk}/queue/read_ahead_kb 2>/dev/null || true
-                            info "磁盘 ${disk} (HDD) → scheduler: mq-deadline, read_ahead: 256K"
-                        fi
-                    fi
-                    # 队列深度（NVMe 硬件已很高，HDD 适当增大）
-                    echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
-  done
-
-# udev 规则持久化（重启后生效）
-cat > /etc/udev/rules.d/99-io-scheduler.rules << 'EOF'
-# SSD / NVMe → none
-ACTION=="add|change", KERNEL=="sd[a-z]|nvme[0-9]n[0-9]", \
-    ATTR{queue/rotational}=="0", \
-    ATTR{queue/scheduler}="none", \
-    ATTR{queue/read_ahead_kb}="0"
-# HDD → mq-deadline
-ACTION=="add|change", KERNEL=="sd[a-z]", \
-    ATTR{queue/rotational}=="1", \
-    ATTR{queue/scheduler}="mq-deadline", \
-    ATTR{queue/read_ahead_kb}="256"
-EOF
-
-  [[ -n "$GW" && -n "$DEV" ]] && { ip route replace default via "$GW" dev "$DEV" initcwnd 32 initrwnd 32; } 2>/dev/null
-
-  # 进程文件描述符限制
-  ss -anptl 2>/dev/null | grep -oP 'pid=\K[0-9]+' | sort -u | xargs -r -I{} sudo prlimit --pid {} --nofile=1048576
-
-  # 网卡参数优化
-  # ethtool -C $nic rx-usecs 10 tx-usecs 10
-  # ethtool -K $nic sg on tx on rx on tso on gso on >/dev/null 2>&1
-
-  # ip link set dev $nic gso_max_size 16384
-
-  # 加载连接跟踪模块
-  # 修复：ip_conntrack 是 2.6.20 以前的旧模块名，现代内核（含 XanMod）已统一为 nf_conntrack
-  sudo modprobe nf_conntrack 2>/dev/null || true
-
-  #  电源管理优化
-  { test -e /sys/module/intel_idle/parameters/max_cstate && echo 0 >/sys/module/intel_idle/parameters/max_cstate; } 2>/dev/null
-  { test -e /sys/module/pcie_aspm/parameters/policy && echo "performance" >/sys/module/pcie_aspm/parameters/policy; } 2>/dev/null
-
-  if ! grep -q "install authencesn" /etc/modprobe.d/security.conf 2>/dev/null; then
-    echo "install authencesn /bin/false" >> /etc/modprobe.d/security.conf
-  fi
-
-  # ensure debugfs is mounted
-                if ! mountpoint -q /sys/kernel/debug; then
-    mount -t debugfs none /sys/kernel/debug
-  fi
-
-  # define target slice in nanoseconds (e.g., 10ms for high throughput)
-  baseSliceNs=3000000
-
-  # check if the parameter exists in the current XanMod build and apply
-  schedConfigPath="/sys/kernel/debug/sched/base_slice_ns"
-  if [ -f "$schedConfigPath" ]; then
-    echo $baseSliceNs > $schedConfigPath
-  fi
+    # 进程 fd 限制（仅监听进程 + 已知高 fd 进程）
+    if command -v prlimit &>/dev/null; then
+        ss -anptl 2>/dev/null | grep -oP 'pid=\K[0-9]+' | sort -u | while read -r pid; do
+            prlimit --pid "$pid" --nofile=1048576 2>/dev/null || true
+        done
+    fi
 
   sudo rmmod authencesn 2>/dev/null
   sudo rmmod algif_aead 2>/dev/null
 
 }
 
-# ==================== 系统垃圾清理 ====================
-cleaning_trash() {
-sudo apt-get clean; sudo apt-get autoclean; sudo apt-get autoremove -y; sudo journalctl --rotate; sudo journalctl --vacuum-time=1s
-sudo dpkg -l | awk '/^rc/{print $2}' | xargs -r sudo dpkg --purge
-sudo rm -rf /tmp/*; sudo rm -rf /var/tmp/*; sudo apt-get autoremove --purge -y
-command -v docker >/dev/null 2>&1 && { docker system prune -a -f; docker volume prune -f; docker network prune -f; docker image prune -a -f; docker container prune -f; docker builder prune -f; }
-rm -rf ~/Downloads/* 2>/dev/null
-rm -rf ~/.cache/thumbnails/* 2>/dev/null
-rm -rf ~/.mozilla/firefox/*.default-release/cache2/* 2>/dev/null
-sudo apt-get clean
-dpkg --list | awk '/^ii +linux-image-[0-9]/ {print $2}' | sort -V | head -n -2 | grep -v "$(uname -r)" | xargs -r sudo apt-get remove --purge -y
-}
-
-# ==================== 内存/连接跟踪参数计算与应用 ====================
+# ==================== 内存参数计算 ====================
 net_mem() {
+    local size_mb avail_mb
+    size_mb=$(free -m | awk '/Mem:/ {print $2}')
+    avail_mb=$(awk '/MemAvailable:/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)
+    [[ -z "$avail_mb" ]] && avail_mb=$size_mb
 
-sysctlConfFile="/etc/sysctl.conf"
+    # 使用可用内存计算，避免 OOM
+    local base=$avail_mb
+    [[ "$base" -lt 512 ]] && base=$size_mb  # fallback
 
-size_mb=$(free -m | awk '/Mem:/ {print $2}')
+    # TCP mem (页): low=6%, mid=12%, high=18% of available
+    local tcp_low=$((base * 15))
+    local tcp_mid=$((base * 30))
+    local tcp_high=$((base * 60))
 
-# 读取可用内存（MB），fallback 到总内存
-avail_mb=$(awk '/MemAvailable:/ {print int($2/1024)}' /proc/meminfo 2>/dev/null)
-[ -z "$avail_mb" ] && avail_mb=$(free -m | awk '/Mem:/ {print $2}')
+    # 封顶保护 (16GB / 8GB pages)
+    [[ $tcp_high -gt 4194304 ]] && { tcp_high=4194304; tcp_mid=2796202; tcp_low=1398101; }
 
-# ---- 基础比例 ----
-# TCP: low=6% available, mid=12%, high=18%
-tcp_low=$((size_mb * 16))
-tcp_mid=$((size_mb * 32))
-tcp_high=$((size_mb * 48))
+    # 保底 (小内存)
+    if [[ $avail_mb -lt 2048 ]]; then
+        tcp_low=8192; tcp_mid=16384; tcp_high=32768
+    fi
 
-# UDP: TCP 的 60%（QUIC 用量通常小于 TCP 总和）
-udp_low=$((tcp_low * 6 / 10))
-udp_mid=$((tcp_mid * 6 / 10))
-udp_high=$((tcp_high * 6 / 10))
+    # UDP mem: TCP 的 60%
+    local udp_low=$((tcp_low * 6 / 10))
+    local udp_mid=$((tcp_mid * 6 / 10))
+    local udp_high=$((tcp_high * 6 / 10))
+    [[ $udp_high -gt 2097152 ]] && { udp_high=2097152; udp_mid=1398101; udp_low=699050; }
 
-# ---- 封顶（大内存保护）----
-tcp_high_cap=4194304      # 16GB 页数
-udp_high_cap=2097152      # 8GB 页数
+    # 单连接上限: 与全局匹配，防止击穿
+    # 高 BDP 场景允许较大缓冲，但封顶 64MB 防止单连接爆内存
+    local tcp_rmem_max=$((tcp_high * 4096 / 32))
+    [[ $tcp_rmem_max -lt 4194304 ]] && tcp_rmem_max=4194304
+    [[ $tcp_rmem_max -gt 67108864 ]] && tcp_rmem_max=67108864
 
-if [ $tcp_high -gt $tcp_high_cap ]; then
-    tcp_high=$tcp_high_cap
-    tcp_mid=$((tcp_high * 2 / 3))
-    tcp_low=$((tcp_high / 3))
-fi
+    local tcp_wmem_max=$tcp_rmem_max
+    [[ $tcp_wmem_max -lt 4194304 ]] && tcp_wmem_max=4194304
+    [[ $tcp_wmem_max -gt 67108864 ]] && tcp_wmem_max=67108864
 
-if [ $udp_high -gt $udp_high_cap ]; then
-    udp_high=$udp_high_cap
-    udp_mid=$((udp_high * 2 / 3))
-    udp_low=$((udp_high / 3))
-fi
+    # 写入 sysctl
+    updateSysctlParam "net.ipv4.tcp_mem" "$tcp_low $tcp_mid $tcp_high"
+    updateSysctlParam "net.ipv4.udp_mem" "$udp_low $udp_mid $udp_high"
+    # updateSysctlParam "net.core.rmem_max" "$tcp_rmem_max"
+    # updateSysctlParam "net.core.wmem_max" "$tcp_wmem_max"
 
-# ---- 保底（小内存保护）----
-if [ $avail_mb -lt 2048 ]; then
-    tcp_low=8192; tcp_mid=16384; tcp_high=32768
-    udp_low=4096; udp_mid=8192; udp_high=16384
-fi
-
-# ---- 单连接上限（必须联动，防止击穿全局）----
-# rmem_max = tcp_high / 32, wmem_max = tcp_high / 32
-tcp_rmem_max=$((tcp_high * 4096 / 32))
-tcp_wmem_max=$tcp_rmem_max
-
-# 夹逼：最低 4MB，最高 64MB（高 BDP 友好）
-[ $tcp_rmem_max -lt 4194304 ]  && tcp_rmem_max=4194304
-[ $tcp_rmem_max -gt 67108864 ] && tcp_rmem_max=67108864
-
-# 单连接上限最低 4MB（1048576），最高 128MB（33554432）
-[ $tcp_rmem_max -lt 1048576 ] && tcp_rmem_max=1048576
-[ $tcp_rmem_max -gt 33554432 ] && tcp_rmem_max=33554432
-[ $tcp_wmem_max -lt 1048576 ] && tcp_wmem_max=1048576
-[ $tcp_wmem_max -gt 33554432 ] && tcp_wmem_max=33554432
-
-tcpMemString="$tcp_low $tcp_mid $tcp_high"
-udpMemString="$udp_low $udp_mid $udp_high"
-
-# ---- nf_conntrack_max（64位系统经典公式：RAM字节 / 8192）----
-# 换算成 size_mb 表达式：size_mb * 1024 * 1024 / 8192 = size_mb * 128
-conntrack_max=$((size_mb * 128))
-conntrack_buckets=$((conntrack_max / 4))
+    # nf_conntrack: 64位经典公式 RAM/8192 bytes = MB*128
+    local conntrack_max=$((size_mb * 128))
+    local conntrack_buckets=$((conntrack_max / 4))
+    updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
+    updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
+}
 
 updateSysctlParam() {
   local paramKey="$1"
@@ -593,10 +402,10 @@ updateSysctlParam() {
   fi
 }
 
-updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
-updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
-updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
-updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
+# updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
+# updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
+# updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
+# updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
 
 # print results（调试时取消注释）
 # echo "size_mb=$size_mb"
@@ -833,6 +642,14 @@ sysctl_select() {
                 fi
             done <<< "$diff_output"
         fi
+        
+         # conntrack hashsize
+    modprobe nf_conntrack 2>/dev/null || true
+    local max_conn
+    max_conn=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null || echo "")
+    if [[ -n "$max_conn" ]] && [[ -w /sys/module/nf_conntrack/parameters/hashsize ]]; then
+        echo $((max_conn / 4)) > /sys/module/nf_conntrack/parameters/hashsize 2>/dev/null || true
+    fi
 
         # 询问是否重启
         read -p "→ 现在重启系统吗? [y/N]: " confirm
@@ -848,15 +665,42 @@ sysctl_select() {
 # ==================== 网络诊断函数 ====================
 # 修复：原来引用的 $nic_interface 从未被赋值，统一改用脚本前面已探测好的 $nic
 lost_packet() {
-ethtool -S "$nic" | grep -e rx_no_buffer_count -e rx_missed_errors -e rx_fifo_errors -e rx_over_errors
+    if [[ -n "$nic" ]] && command -v ethtool &>/dev/null; then
+        ethtool -S "$nic" 2>/dev/null | grep -E "rx_no_buffer_count|rx_missed_errors|rx_fifo_errors|rx_over_errors" || info "无丢包计数"
+    else
+        warn "未检测到网卡或 ethtool 不可用"
+    fi
 }
 
 check_buffer() {
-ethtool -g "$nic"
+    if [[ -n "$nic" ]] && command -v ethtool &>/dev/null; then
+        ethtool -g "$nic" 2>/dev/null || warn "无法读取网卡缓冲"
+    fi
 }
 
 check_settings() {
-ethtool -c "$nic"
+    if [[ -n "$nic" ]] && command -v ethtool &>/dev/null; then
+        ethtool -c "$nic" 2>/dev/null || warn "无法读取网卡设置"
+    fi
+}
+
+cleaning_trash() {
+    warn "此脚本已移除危险的 rm -rf /tmp 和 docker prune"
+    info "执行安全的包管理器清理..."
+    case "$OS" in
+        ubuntu|debian|linuxmint|pop)
+            apt-get clean >/dev/null 2>&1 || true
+            apt-get autoremove -y >/dev/null 2>&1 || true
+            ;;
+        centos|rhel|rocky|almalinux|fedora)
+            if command -v dnf &>/dev/null; then
+                dnf clean all >/dev/null 2>&1 || true
+            else
+                yum clean all >/dev/null 2>&1 || true
+            fi
+            ;;
+    esac
+    info "清理完成"
 }
 
 # ==================== 命令帮助信息 ====================
