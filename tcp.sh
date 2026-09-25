@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.7"
-version_test="268"
+version_test="269"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -447,6 +447,10 @@ radical_sh() {
 bash <(curl -Ls https://raw.githubusercontent.com/Shellgate/tcp_optimization_bbr/main/bbr.sh)
 }
 
+up_cloudflared() {
+curl --location --output cloudflared.deb "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$(dpkg --print-architecture).deb" && sudo dpkg -i cloudflared.deb && sudo systemctl restart cloudflared.service
+}
+
 # ==================== 全部优化安装 ====================
 Install_All() {
 Install_limits; Install_systemd; Install_sysctl;
@@ -718,6 +722,7 @@ while true; do
     echo "15. 检查当前设置 18. TCP 调优"
     echo "16. systemd-journald 优化 "
     echo "17. sysctl 重新加载优化 "
+    echo "18. 更新 cloudflared "
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -742,7 +747,8 @@ while true; do
       15) check_settings ;;
       16) systemd_journald_optimize ;;
       17) sysctl_p ; clear ; exit ;;
-      18) bash <(curl -fsSL https://raw.githubusercontent.com/Kylin010/tcpfit/main/tcpfit.sh) ;;
+      18) up_cloudflared ;;
+      19) bash <(curl -fsSL https://raw.githubusercontent.com/Kylin010/tcpfit/main/tcpfit.sh) ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
