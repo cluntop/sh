@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.7"
-version_test="269"
+version_test="270"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -240,19 +240,26 @@ update_script() {
 
 # ==================== 系统限制优化 ====================
 Install_limits() {
-cat >/etc/security/limits.conf<<EOF
-root soft nproc unlimited
-root hard nproc unlimited
-root soft nofile unlimited
-root hard nofile unlimited
+cat >> /etc/security/limits.conf <<EOF
+root hard memlock unlimited
+root soft memlock unlimited
+root hard nproc 1048576
+root hard nofile 1048576
+root soft nproc 1048576
+root soft nofile 1048576
 
-* soft nproc unlimited
-* hard nproc unlimited
-* soft nofile unlimited
-* hard nofile unlimited
+* hard memlock unlimited
+* soft memlock unlimited
+* hard nproc 1048576
+* hard nofile 1048576
+* soft nproc 1048576
+* soft nofile 1048576
 
-* soft core 0
+root hard core 0
+root soft core 0
+
 * hard core 0
+* soft core 0
 EOF
 
     # PAM 限制模块
