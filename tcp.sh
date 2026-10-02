@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # set -euo pipefail
 
-version="1.2.7"
-version_test="271"
+version="1.2.8"
+version_test="272"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -21,7 +21,7 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-# ==================== 日志辅助函数（原脚本缺失，已补全） ====================
+# ==================== 日志辅助函数 ====================
 info() { echo -e "${GREEN}[信息]${RESET} $*"; }
 warn() { echo -e "${YELLOW}[警告]${RESET} $*"; }
 skip() { echo -e "${GRAY}[跳过]${RESET} $*"; }
@@ -37,6 +37,13 @@ elif [ -f /etc/redhat-release ]; then
     OS_NAME=$(cat /etc/redhat-release)
 else
     OS="unknown"
+fi
+
+# 虚拟化检测
+IS_VIRTUALIZED=0
+if command -v systemd-detect-virt >/dev/null 2>&1; then
+    _virt=$(systemd-detect-virt 2>/dev/null)
+    [ -n "$_virt" ] && [ "$_virt" != "none" ] && IS_VIRTUALIZED=1
 fi
 
 # ==================== 包管理器配置 ====================
@@ -96,11 +103,7 @@ fi
 GW=$(ip route show default | awk '/default/ {print $3; exit}')
 DEV=$(ip route show default | awk '/default/ {print $5; exit}')
 
-# ==================== 内存硬件信息 ====================
-# tcp_dyjs=$(sudo dmidecode -t memory | grep -i "Size:" | sed -e '/No Module Installed/d' -e 's/.*Size: \([0-9]\+\).*/\1/')
-# tcp_dy=$(echo "$tcp_dyjs * 128 / 4" | bc 2>/dev/null)
-
-
+# ==================== systemd-journald 优化 ====================
 systemd_journald_optimize() {
 
     local CONF_FILE="/etc/systemd/journald.conf"
@@ -120,31 +123,24 @@ systemd_journald_optimize() {
 
         read -e -p "请输入 [0-4]: " MODE
 
-        # 处理返回逻辑
         if [[ "$MODE" == "0" ]]; then
             return 0
         fi
 
-        # 处理无效输入
         if [[ ! "$MODE" =~ ^[1-4]$ ]]; then
             echo "无效输入，请重新选择！"
             sleep 1
             continue
         fi
 
-        # --- 只有选择 1-4 时才执行以下逻辑 ---
-
-        # 1. 备份原配置
         local BACKUP_FILE="${CONF_FILE}.bak.$(date +%Y%m%d_%H%M%S)"
         cp "$CONF_FILE" "$BACKUP_FILE"
         echo "已备份原配置至 $BACKUP_FILE"
 
-        # 2. 写入配置头部
         cat <<EOF > "$CONF_FILE"
 [Journal]
 EOF
 
-        # 3. 根据模式追加参数
         case $MODE in
           1)
             echo "正在应用: 模式 1 (不记录)"
@@ -201,7 +197,6 @@ EOF
             ;;
         esac
 
-        # 4. 重启服务并提示
         systemctl restart systemd-journald
         echo "----------------------------------------"
         echo "配置已生效，systemd-journald 已重启。"
@@ -213,7 +208,6 @@ EOF
 
 # ==================== 通用函数 ====================
 break_end() {
-    # echo "操作完成"
     echo "按任意键继续..."
     read -n 1 -s -r -p ""
     echo ""
@@ -262,7 +256,6 @@ root soft core 0
 * soft core 0
 EOF
 
-    # PAM 限制模块
     if [ -f /etc/pam.d/common-session ]; then
         if ! grep -q "pam_limits.so" /etc/pam.d/common-session; then
             echo "session required pam_limits.so" >> /etc/pam.d/common-session
@@ -278,14 +271,12 @@ EOF
 
 # ==================== 系统服务优化 ====================
 Install_systemd() {
-    # 透明大页 — 对高并发网络有益
     if [[ -f /sys/kernel/mm/transparent_hugepage/enabled ]]; then
         echo never >/sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
         echo never >/sys/kernel/mm/transparent_hugepage/defrag 2>/dev/null || true
         echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag 2>/dev/null || true
     fi
 
-    # CPU 性能模式 — 仅物理机
     if [[ "$IS_VIRTUALIZED" -eq 0 ]]; then
         if [[ -f /sys/devices/system/cpu/cpufreq/scaling_governor ]]; then
             echo performance | tee /sys/devices/system/cpu/cpufreq/scaling_governor >/dev/null 2>&1 || true
@@ -299,14 +290,12 @@ Install_systemd() {
         cpupower idle-set -D 1 &>/dev/null || true
     fi
 
-    # irqbalance — 虚拟化环境保持原状，物理机视情况
     if [[ "$IS_VIRTUALIZED" -eq 0 ]]; then
         if systemctl is-active --quiet irqbalance 2>/dev/null; then
             warn "物理机检测到 irqbalance 运行中。若已手动绑核，请自行停止。"
         fi
     fi
 
-    # 磁盘调度器优化
     for disk in $(lsblk -d -o NAME,TYPE 2>/dev/null | awk '$2=="disk"{print $1}'); do
         SCH_FILE="/sys/block/${disk}/queue/scheduler"
         [[ -f "$SCH_FILE" ]] || continue
@@ -323,10 +312,8 @@ Install_systemd() {
         echo 64 > /sys/block/${disk}/queue/nr_requests 2>/dev/null || true
     done
 
-    # 加载连接跟踪模块（现代内核）
     modprobe nf_conntrack 2>/dev/null || true
 
-    # 进程 fd 限制（仅监听进程 + 已知高 fd 进程）
     if command -v prlimit &>/dev/null; then
         ss -anptl 2>/dev/null | grep -oP 'pid=\K[0-9]+' | sort -u | while read -r pid; do
             prlimit --pid "$pid" --nofile=1048576 2>/dev/null || true
@@ -335,10 +322,14 @@ Install_systemd() {
 
   sudo rmmod authencesn 2>/dev/null
   sudo rmmod algif_aead 2>/dev/null
-
 }
 
 # ==================== 内存参数计算与应用 ====================
+# 公式（单位：页，4KB/页）：
+#   tcp_mem: low=RAM_MB*16, pres=RAM_MB*32, max=RAM_MB*64
+#   换算成字节即 RAM/16, RAM/8, RAM/4
+#   下限保护：low>=4096, pres>=8192, max>=16384
+#   udp_mem: 按原脚本逻辑取 tcp_mem 的 60%，同样加下限
 net_mem() {
     local size_mb avail_mb
     size_mb=$(free -m | awk '/Mem:/ {print $2}')
@@ -349,16 +340,15 @@ net_mem() {
     local base=$avail_mb
     [[ "$base" -lt 512 ]] && base=$size_mb
 
-    # low = RAM/16, pres = RAM/8, max = RAM/4
+    # --- tcp_mem: RAM/16, RAM/8, RAM/4（单位页）---
     local tcp_low=$((base * 16))
     local tcp_mid=$((base * 32))
     local tcp_high=$((base * 64))
-    # 下限保护（tcpfit 原值）: low>=4096, pres>=8192, max>=16384
     [[ $tcp_low  -lt 4096  ]] && tcp_low=4096
     [[ $tcp_mid  -lt 8192  ]] && tcp_mid=8192
     [[ $tcp_high -lt 16384 ]] && tcp_high=16384
 
-    # === udp_mem: 同公式，按原脚本保持 TCP 的 60% ===
+    # --- udp_mem: TCP 的 60%，同样加下限 ---
     local udp_low=$((tcp_low  * 6 / 10))
     local udp_mid=$((tcp_mid  * 6 / 10))
     local udp_high=$((tcp_high * 6 / 10))
@@ -369,12 +359,35 @@ net_mem() {
     updateSysctlParam "net.ipv4.tcp_mem" "$tcp_low $tcp_mid $tcp_high"
     updateSysctlParam "net.ipv4.udp_mem" "$udp_low $udp_mid $udp_high"
 
+    # info "tcp_mem = $tcp_low $tcp_mid $tcp_high  (页, 基于 ${base}MB)"
+    # info "udp_mem = $udp_low $udp_mid $udp_high  (页, TCP 的 60%)"
+
     # nf_conntrack: 经典公式 RAM*128
     local conntrack_max=$((size_mb * 128))
     local conntrack_buckets=$((conntrack_max / 4))
     updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
     updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
 }
+
+updateSysctlParam() {
+    local paramKey="$1"
+    local paramValue="$2"
+    local targetFile="$sysctl_conf"
+
+    if grep -qE "^[[:space:]]*#?[[:space:]]*${paramKey}\b" "$targetFile"; then
+        sed -i -E "s|^[[:space:]]*#?[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$targetFile"
+    else
+        if [[ -s "$targetFile" ]] && [[ -n "$(tail -c1 "$targetFile")" ]]; then
+            printf '\n' >> "$targetFile"
+        fi
+        echo "${paramKey} = ${paramValue}" >> "$targetFile"
+    fi
+}
+
+# ==================== 路由窗口设置（仅运行时，不持久化） ====================
+# 沿用全部 token，只增改 initcwnd/initrwnd，避免丢掉
+# onlink / metric / proto / src 等服务商下发的属性。
+# 不写任何 unit / hook / drop-in，重启后自动失效。
 
 route_field() {
     local key="$1" line="${2-}"
@@ -383,8 +396,6 @@ route_field() {
         for(i=1;i<NF;i++) if($i==k){print $(i+1); exit}}'
 }
 
-# 设 initcwnd/initrwnd. 沿用现有默认路由的全部 token，只增改窗口字段，
-# 避免丢掉 onlink / metric / proto / src 等服务商下发的属性
 route_set_initcwnd() {
     local n="$1" route token skip=0
     local -a args=() clean=()
@@ -414,35 +425,98 @@ route_set_initcwnd() {
     fi
 }
 
-updateSysctlParam() {
-    local paramKey="$1"
-    local paramValue="$2"
-    local targetFile="$sysctl_conf"   # ← 修复 Bug 1：使用脚本已定义的变量
+# ==================== 全部缓存清理 ====================
+# 覆盖：TCP 指标 → 路由缓存 → ARP/NDP → DNS → conntrack → 页面缓存
+# 顺序有讲究：先清协议栈层，再清系统层，最后才动 conntrack（会断连）
+clear_all_caches() {
+    echo
+    echo "  ─────────────────────────────────────────────"
+    echo "  清理缓存"
+    echo "  ─────────────────────────────────────────────"
+    echo
 
-    # ← 修复 Bug 2：匹配行首可选空白 + 可选注释 + 可选空白 + 参数名
-    if grep -qE "^[[:space:]]*#?[[:space:]]*${paramKey}\b" "$targetFile"; then
-        # ← 修复 Bug 3：sed 加 -E 启用扩展正则，同时去掉可能存在的注释标记
-        sed -i -E "s|^[[:space:]]*#?[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$targetFile"
+    # ---- 1. TCP 指标缓存 ----
+    if ip tcp_metrics flush all >/dev/null 2>&1; then
+        info "TCP 指标缓存 (ip tcp_metrics flush all)"
     else
-        # 不存在则追加，确保文件末尾有换行
-        if [[ -s "$targetFile" ]] && [[ -n "$(tail -c1 "$targetFile")" ]]; then
-            printf '\n' >> "$targetFile"
-        fi
-        echo "${paramKey} = ${paramValue}" >> "$targetFile"
+        skip "TCP 指标缓存 (ip tcp_metrics 不可用)"
     fi
+    ip -6 tcp_metrics flush all >/dev/null 2>&1 && info "IPv6 TCP 指标缓存" || true
+
+    # ---- 2. 路由缓存 ----
+    # 内核 3.6+ 已移除传统路由缓存，此命令在新内核上可能无实际效果，但无害
+    if ip route flush cache >/dev/null 2>&1; then
+        info "路由缓存 (ip route flush cache)"
+    else
+        skip "路由缓存 (新内核可能不支持)"
+    fi
+    ip -6 route flush cache >/dev/null 2>&1 && info "IPv6 路由缓存" || true
+
+    # ---- 3. ARP / NDP 邻居缓存 ----
+    if ip -s -s neigh flush all >/dev/null 2>&1; then
+        info "ARP / NDP 邻居缓存 (ip -s -s neigh flush all)"
+    else
+        skip "邻居缓存 (ip neigh 不可用)"
+    fi
+
+    # ---- 4. DNS 缓存 ----
+    # systemd-resolved（现代 Ubuntu/Debian 默认）
+    if command -v resolvectl >/dev/null 2>&1; then
+        resolvectl flush-caches >/dev/null 2>&1 && info "systemd-resolved DNS 缓存 (resolvectl flush-caches)"
+    elif command -v systemd-resolve >/dev/null 2>&1; then
+        systemd-resolve --flush-caches >/dev/null 2>&1 && info "systemd-resolved DNS 缓存 (systemd-resolve)"
+    fi
+    # nscd
+    if command -v nscd >/dev/null 2>&1; then
+        nscd -i hosts >/dev/null 2>&1 && info "nscd hosts 缓存 (nscd -i hosts)"
+    fi
+    # dnsmasq
+    if systemctl is-active --quiet dnsmasq 2>/dev/null; then
+        pkill -HUP dnsmasq >/dev/null 2>&1 && info "dnsmasq DNS 缓存 (SIGHUP)"
+    fi
+    # BIND
+    if command -v rndc >/dev/null 2>&1 && systemctl is-active --quiet named 2>/dev/null; then
+        rndc flush >/dev/null 2>&1 && info "BIND DNS 缓存 (rndc flush)"
+    fi
+
+    # ---- 5. conntrack 连接跟踪表 ----
+    # 会中断所有已建立连接（包括 SSH），必须提醒
+    echo
+    warn "conntrack 清理会中断所有已建立的连接（包括 SSH）"
+    if confirm "  是否清理 conntrack 表？" n; then
+        if command -v conntrack >/dev/null 2>&1; then
+            conntrack -F >/dev/null 2>&1 && info "conntrack 连接跟踪表 (conntrack -F)"
+        else
+            # 没有 conntrack 工具时，按状态清理 TIME_WAIT（较安全）
+            if [ -w /proc/sys/net/netfilter/nf_conntrack_count ]; then
+                skip "conntrack 工具未安装 (apt install conntrack)"
+            else
+                skip "nf_conntrack 未加载"
+            fi
+        fi
+    else
+        skip "conntrack 表 (按你的选择跳过)"
+    fi
+
+    # ---- 6. 系统页面 / inode / dentry 缓存 ----
+    echo
+    if confirm "  是否清理系统页面/inode 缓存？(drop_caches)" n; then
+        sync
+        if echo 3 > /proc/sys/vm/drop_caches 2>/dev/null; then
+            info "页面 + dentry + inode 缓存 (drop_caches=3)"
+        else
+            warn "drop_caches 写入失败（只读文件系统？）"
+        fi
+    else
+        skip "系统页面缓存 (按你的选择跳过)"
+    fi
+
+    echo
+    echo "  ─────────────────────────────────────────────"
+    echo "  缓存清理完成"
+    echo "  ─────────────────────────────────────────────"
+    echo
 }
-
-# updateSysctlParam "net.ipv4.tcp_mem" "$tcpMemString"
-# updateSysctlParam "net.ipv4.udp_mem" "$udpMemString"
-# updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
-# updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
-
-# print results（调试时取消注释）
-# echo "size_mb=$size_mb"
-# echo "net.ipv4.tcp_mem = $tcpMemString"
-# echo "net.ipv4.udp_mem = $udpMemString"
-# echo "net.netfilter.nf_conntrack_max = $conntrack_max"
-# echo "net.netfilter.nf_conntrack_buckets = $conntrack_buckets"
 
 # ==================== Sysctl 配置应用 ====================
 sysctl_p() {
@@ -453,14 +527,14 @@ sysctl_p() {
   sysctl --system >/dev/null 2>&1
   sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
   sysctl -w net.ipv6.route.flush=1 >/dev/null 2>&1
-  sudo ip route flush cache >/dev/null 2>&1
+  ip route flush cache >/dev/null 2>&1
 
   resolvectl flush-caches 2>/dev/null || true
   systemctl restart nscd 2>/dev/null || service nscd restart 2>/dev/null || true
-  sudo nscd -i hosts 2>/dev/null || true
   ip neigh flush all 2>/dev/null || true
+  nscd -i hosts 2>/dev/null || true
 
-  sudo modprobe nf_conntrack 2>/dev/null || true
+  modprobe nf_conntrack 2>/dev/null || true
   MAX_CONN=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null)
   if [[ -n "$MAX_CONN" ]]; then
       HASHSIZE=$((MAX_CONN / 4))
@@ -468,6 +542,8 @@ sysctl_p() {
   fi
 
   sysctl -w net.core.rps_sock_flow_entries=32768 >/dev/null 2>&1
+
+  # === 修改：设置路由窗口，仅运行时，不持久化 ===
   route_set_initcwnd 32
 
 }
@@ -502,14 +578,10 @@ Install_limits; Install_systemd; Install_sysctl;
 # ==================== 内核参数配置 ====================
 Install_sysctl() {
 
-# 备份原配置
 [[ -f "$backup_bak" ]] && rm -f "$backup_bak"
 cp "$sysctl_conf" "$backup_bak"
 echo -e "${GREEN}✓ 备份已保存至 $backup_bak${RESET}"
 
-# 下载新配置
-# 修复：curl 加 -f，遇到 HTTP 4xx/5xx 时直接返回非零，
-# 避免把 "404: Not Found" 这类错误页面当成正常配置写入 /etc/sysctl.conf
 curl -sf -o "$tmp_new" "$sysctl_url"
 
 if [[ $? -ne 0 ]]; then
@@ -517,11 +589,9 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-# 应用新配置
 cp "$tmp_new" "$sysctl_conf"
 echo -e "${GREEN}✓ 配置已应用.${RESET}"
 
-# 创建 sysctl.d 软链接
 file_sysctl="/etc/sysctl.d/99-sysctl.conf"
 if [ -L "$file_sysctl" ]; then
     mv -f "$file_sysctl" "${file_sysctl}.bak"
@@ -531,10 +601,8 @@ fi
 
 ln -sf /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
 
-# 清理 TCP 指标缓存
 ip tcp_metrics flush all > /dev/null 2>&1
 
-# 应用 sysctl 配置
 sysctl_p
 
 echo -e "${BLUE}→ 应用变更:${RESET}"
@@ -553,20 +621,16 @@ else
     done <<< "$diff_output"
 fi
 
-# 询问是否重启
 read -p "→ 现在重启系统吗? [y/N]: " confirm
 [[ "$confirm" =~ ^[Yy]$ ]] && reboot
 }
 
 # ==================== conf.d/test 配置选择与应用 ====================
-# 从 https://github.com/cluntop/sh/tree/main/conf.d/test 拉取配置清单，
-# 选择后下载替换 /etc/sysctl.conf 并加载
 sysctl_select() {
     local list_file="/tmp/sysctl_remote.list"
     local api_url="https://api.github.com/repos/cluntop/sh/contents/conf.d/test"
     local choice entry sel_name sel_url diff_output confirm
 
-    # 直接从 GitHub API 拉取最新文件清单（纯 curl 解析，不依赖 python）
     if ! curl -sf --connect-timeout 10 --max-time 20 -H "User-Agent: curl" "$api_url" -o /tmp/sysctl_dir.json; then
         echo -e "${RED}✗ 获取远程配置清单失败，请检查网络后重试${RESET}"
         echo -e "${GRAY}  $api_url${RESET}"
@@ -574,8 +638,6 @@ sysctl_select() {
         return 1
     fi
 
-    # 用 grep/sed 提取 JSON 中的 name 与 download_url 字段，
-    # 生成 "序号|文件名|下载地址" 清单（两次提取次序一致，与 API 返回逐项对应）
     grep -o '"name": *"[^"]*"' /tmp/sysctl_dir.json \
         | sed 's/.*"name": *"//; s/"$//' > /tmp/sysctl_names.tmp
     grep -o '"download_url": *"[^"]*"' /tmp/sysctl_dir.json \
@@ -628,12 +690,10 @@ sysctl_select() {
         echo "已选择: ${sel_name}"
         echo "下载: ${sel_url}"
 
-        # 备份当前配置
         [[ -f "$backup_bak" ]] && rm -f "$backup_bak"
         cp "$sysctl_conf" "$backup_bak"
         echo -e "${GREEN}✓ 备份已保存至 $backup_bak${RESET}"
 
-        # 下载所选配置
         curl -sfL -o "$tmp_new" "$sel_url"
         if [[ $? -ne 0 ]]; then
             echo -e "${RED}✗ 下载配置文件失败: ${sel_name}${RESET}"
@@ -641,11 +701,9 @@ sysctl_select() {
             continue
         fi
 
-        # 应用新配置
         cp "$tmp_new" "$sysctl_conf"
         echo -e "${GREEN}✓ 配置已应用: ${sel_name}${RESET}"
 
-        # 创建 sysctl.d 软链接
         file_sysctl="/etc/sysctl.d/99-sysctl.conf"
         if [ -L "$file_sysctl" ]; then
             mv -f "$file_sysctl" "${file_sysctl}.bak"
@@ -654,10 +712,8 @@ sysctl_select() {
         fi
         ln -sf /etc/sysctl.conf /etc/sysctl.d/99-sysctl.conf
 
-        # 清理 TCP 指标缓存
         ip tcp_metrics flush all > /dev/null 2>&1
 
-        # 加载配置
         sysctl_p
 
         echo -e "${BLUE}→ 应用变更:${RESET}"
@@ -676,15 +732,13 @@ sysctl_select() {
             done <<< "$diff_output"
         fi
 
-         # conntrack hashsize
-    modprobe nf_conntrack 2>/dev/null || true
-    local max_conn
-    max_conn=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null || echo "")
-    if [[ -n "$max_conn" ]] && [[ -w /sys/module/nf_conntrack/parameters/hashsize ]]; then
-        echo $((max_conn / 4)) > /sys/module/nf_conntrack/parameters/hashsize 2>/dev/null || true
-    fi
+        modprobe nf_conntrack 2>/dev/null || true
+        local max_conn
+        max_conn=$(sysctl -n net.netfilter.nf_conntrack_max 2>/dev/null || sysctl -n net.nf_conntrack_max 2>/dev/null || echo "")
+        if [[ -n "$max_conn" ]] && [[ -w /sys/module/nf_conntrack/parameters/hashsize ]]; then
+            echo $((max_conn / 4)) > /sys/module/nf_conntrack/parameters/hashsize 2>/dev/null || true
+        fi
 
-        # 询问是否重启
         read -p "→ 现在重启系统吗? [y/N]: " confirm
         [[ "$confirm" =~ ^[Yy]$ ]] && reboot
 
@@ -696,7 +750,6 @@ sysctl_select() {
 }
 
 # ==================== 网络诊断函数 ====================
-# 修复：原来引用的 $nic_interface 从未被赋值，统一改用脚本前面已探测好的 $nic
 lost_packet() {
     if [[ -n "$nic" ]] && command -v ethtool &>/dev/null; then
         ethtool -S "$nic" 2>/dev/null | grep -E "rx_no_buffer_count|rx_missed_errors|rx_fifo_errors|rx_over_errors" || info "无丢包计数"
@@ -766,6 +819,7 @@ while true; do
     echo "16. systemd-journald 优化 "
     echo "17. sysctl 重新加载优化 "
     echo "18. 更新 cloudflared "
+    echo "19. TCP 调优 20. 清理全部缓存"
     echo "000. 科技 Lion 脚本工具箱"
     echo "---"
     echo "00. 更新脚本 0. 退出脚本"
@@ -773,7 +827,6 @@ while true; do
     read -e -p "请输入你的选择: " choice
 
     case $choice in
-      # 修复：原来这两行把 ";" 误打成 ":"，导致 clear 从未真正执行
       1) Install_All ; clear ; exit ;;
       2) Install_limits ;;
       3) Install_systemd ;;
@@ -792,12 +845,12 @@ while true; do
       17) sysctl_p ; clear ; exit ;;
       18) up_cloudflared ;;
       19) bash <(curl -fsSL https://raw.githubusercontent.com/Kylin010/tcpfit/main/tcpfit.sh) ;;
+      20) clear_all_caches ;;
       000) kejilion_sh ; clear ; exit ;;
       00) update_script ; clear ; exit ;;
       0) clear ; exit ;;
       *) echo "无效的输入!" ;;
     esac
-      # break_end
     echo
 done
 }
@@ -805,11 +858,8 @@ done
 # ==================== 命令行参数处理 ====================
 case $1 in
     "sys")
-      # 定时任务: 每小时执行一次内核优化
       cron_clun="0 * * * * curl -sL clun.top | bash -s -- sysctl"
-      # 检查是否存在相同的定时任务
       clun_cron=$(crontab -l 2>/dev/null | grep -F "$cron_clun")
-      # 如果不存在，则添加定时任务
       if [ -z "$clun_cron" ]; then
         (crontab -l 2>/dev/null; echo "$cron_clun") | crontab -
         echo "优化内核任务已添加"
@@ -823,6 +873,3 @@ case $1 in
     "conf") sysctl_select ;;
     *) sleep 1 && clun_tcp ;;
 esac
-
-# sleep 1 &&
-# clun_tcp
