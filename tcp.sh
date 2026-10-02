@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.8"
-version_test="273"
+version_test="274"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -344,10 +344,10 @@ net_mem() {
     [[ $tcp_mid  -lt 8192  ]] && tcp_mid=8192
     [[ $tcp_high -lt 16384 ]] && tcp_high=16384
 
-    # --- udp_mem: TCP 的 60%，同样加下限 ---
-    local udp_low=$((tcp_low  * 6 / 10))
-    local udp_mid=$((tcp_mid  * 6 / 10))
-    local udp_high=$((tcp_high * 6 / 10))
+    # --- udp_mem: UDP 改成 tcp_mem 相同 ---
+    local udp_low=$tcp_low
+    local udp_mid=$tcp_mid
+    local udp_high=$tcp_high
     [[ $udp_low  -lt 4096  ]] && udp_low=4096
     [[ $udp_mid  -lt 8192  ]] && udp_mid=8192
     [[ $udp_high -lt 16384 ]] && udp_high=16384
