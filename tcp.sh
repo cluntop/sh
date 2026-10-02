@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.7"
-version_test="270"
+version_test="271"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -349,34 +349,69 @@ net_mem() {
     local base=$avail_mb
     [[ "$base" -lt 512 ]] && base=$size_mb
 
-    # TCP mem (页): low=15页/MB, mid=30页, high=60页 (约 6%/12%/24%)
-    local tcp_low=$((base * 15))
-    local tcp_mid=$((base * 30))
-    local tcp_high=$((base * 60))
+    # low = RAM/16, pres = RAM/8, max = RAM/4
+    local tcp_low=$((base * 16))
+    local tcp_mid=$((base * 32))
+    local tcp_high=$((base * 64))
+    # 下限保护（tcpfit 原值）: low>=4096, pres>=8192, max>=16384
+    [[ $tcp_low  -lt 4096  ]] && tcp_low=4096
+    [[ $tcp_mid  -lt 8192  ]] && tcp_mid=8192
+    [[ $tcp_high -lt 16384 ]] && tcp_high=16384
 
-    # 封顶保护 (16GB pages)
-    [[ $tcp_high -gt 4194304 ]] && { tcp_high=4194304; tcp_mid=2796202; tcp_low=1398101; }
-
-    # 保底 (小内存)
-    if [[ $avail_mb -lt 2048 ]]; then
-        tcp_low=8192; tcp_mid=16384; tcp_high=32768
-    fi
-
-    # UDP mem: TCP 的 60%
-    local udp_low=$((tcp_low * 6 / 10))
-    local udp_mid=$((tcp_mid * 6 / 10))
+    # === udp_mem: 同公式，按原脚本保持 TCP 的 60% ===
+    local udp_low=$((tcp_low  * 6 / 10))
+    local udp_mid=$((tcp_mid  * 6 / 10))
     local udp_high=$((tcp_high * 6 / 10))
-    [[ $udp_high -gt 2097152 ]] && { udp_high=2097152; udp_mid=1398101; udp_low=699050; }
+    [[ $udp_low  -lt 4096  ]] && udp_low=4096
+    [[ $udp_mid  -lt 8192  ]] && udp_mid=8192
+    [[ $udp_high -lt 16384 ]] && udp_high=16384
 
-    # 写入 sysctl（存在则替换，不存在则追加）
     updateSysctlParam "net.ipv4.tcp_mem" "$tcp_low $tcp_mid $tcp_high"
     updateSysctlParam "net.ipv4.udp_mem" "$udp_low $udp_mid $udp_high"
 
-    # nf_conntrack: 64位经典公式 RAM/8192 bytes = MB*128
+    # nf_conntrack: 经典公式 RAM*128
     local conntrack_max=$((size_mb * 128))
     local conntrack_buckets=$((conntrack_max / 4))
     updateSysctlParam "net.netfilter.nf_conntrack_max" "$conntrack_max"
     updateSysctlParam "net.netfilter.nf_conntrack_buckets" "$conntrack_buckets"
+}
+
+route_field() {
+    local key="$1" line="${2-}"
+    [ $# -ge 2 ] || line=$(ip -4 route show default 2>/dev/null | head -1)
+    printf '%s\n' "$line" | awk -v k="$key" '{
+        for(i=1;i<NF;i++) if($i==k){print $(i+1); exit}}'
+}
+
+# 设 initcwnd/initrwnd. 沿用现有默认路由的全部 token，只增改窗口字段，
+# 避免丢掉 onlink / metric / proto / src 等服务商下发的属性
+route_set_initcwnd() {
+    local n="$1" route token skip=0
+    local -a args=() clean=()
+
+    route=$(ip -4 route show default 2>/dev/null | head -1)
+    [ -n "$route" ] || { warn "未找到默认路由，跳过 initcwnd"; return 1; }
+
+    # 多路径路由第一行没有 dev/via，不能 replace
+    [ -n "$(route_field dev "$route")" ] || { warn "多路径默认路由，跳过 initcwnd"; return 1; }
+
+    read -r -a args <<< "$route"
+    for token in "${args[@]}"; do
+        if [ "$skip" = 1 ]; then skip=0; continue; fi
+        case "$token" in
+            initcwnd|initrwnd) skip=1 ;;
+            *) clean+=("$token") ;;
+        esac
+    done
+    [ "${#clean[@]}" -gt 1 ] || { warn "默认路由解析失败，跳过 initcwnd"; return 1; }
+
+    if ip -4 route replace "${clean[@]}" initcwnd "$n" initrwnd "$n" 2>/dev/null; then
+        info "initcwnd/initrwnd = $n 已设置（仅本次生效，重启后失效）"
+        return 0
+    else
+        warn "initcwnd 设置失败（部分虚拟化平台不支持）"
+        return 1
+    fi
 }
 
 updateSysctlParam() {
@@ -433,6 +468,7 @@ sysctl_p() {
   fi
 
   sysctl -w net.core.rps_sock_flow_entries=32768 >/dev/null 2>&1
+  route_set_initcwnd 32
 
 }
 
@@ -639,7 +675,7 @@ sysctl_select() {
                 fi
             done <<< "$diff_output"
         fi
-        
+
          # conntrack hashsize
     modprobe nf_conntrack 2>/dev/null || true
     local max_conn
