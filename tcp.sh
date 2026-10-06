@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.8"
-version_test="275"
+version_test="276"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -460,6 +460,21 @@ net_mem() {
     updateSysctlParam "net.core.rmem_max" "${rcvBufMax}"
     updateSysctlParam "net.core.wmem_max" "${sndBufMax}"
     updateSysctlParam "net.core.optmem_max" "${optmemCeiling}"
+}
+
+updateSysctlParam() {
+    local paramKey="$1"
+    local paramValue="$2"
+    local targetFile="$sysctl_conf"
+
+    if grep -qE "^[[:space:]]*#?[[:space:]]*${paramKey}\b" "$targetFile"; then
+        sed -i -E "s|^[[:space:]]*#?[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$targetFile"
+    else
+        if [[ -s "$targetFile" ]] && [[ -n "$(tail -c1 "$targetFile")" ]]; then
+            printf '\n' >> "$targetFile"
+        fi
+        echo "${paramKey} = ${paramValue}" >> "$targetFile"
+    fi
 }
 
 # ==================== 路由窗口设置（仅运行时，不持久化） ====================
