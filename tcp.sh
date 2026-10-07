@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # set -euo pipefail
 
-version="1.2.8"
-version_test="277"
+version="1.2.9"
+version_test="278"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -528,7 +528,7 @@ EOF
 updateSysctlParam() {
     local paramKey="$1"
     local paramValue="$2"
-    local targetFile="$sysctlConf"
+    local targetFile="$sysctl_conf"
 
     # Ensure target configuration directory and file exist
     mkdir -p "$(dirname "$targetFile")"
