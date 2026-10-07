@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.8"
-version_test="276"
+version_test="277"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -462,10 +462,77 @@ net_mem() {
     updateSysctlParam "net.core.optmem_max" "${optmemCeiling}"
 }
 
+# Automatically detect the primary egress network interface
+getPrimaryInterface() {
+    local detectedInterface
+    # Primary lookup: query routing entry for default gateway
+    detectedInterface=$(ip -4 route show default 2>/dev/null | awk '/default/ {print $5; exit}')
+    
+    # Fallback lookup: resolve interface via route lookup to public DNS
+    if [[ -z "$detectedInterface" ]]; then
+        detectedInterface=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $5; exit}')
+    fi
+
+    # Fallback lookup: grab the first non-virtual physical link if routing is empty
+    if [[ -z "$detectedInterface" ]]; then
+        detectedInterface=$(ls /sys/class/net | grep -vE '^(lo|docker|veth|br-|virbr|tun|tap|wg)' | head -n1)
+    fi
+
+    echo "$detectedInterface"
+}
+
+# Configure RFS and interface-specific network parameters
+configureRfs() {
+    local targetInterface="$1"
+    local totalEntries="${2:-131072}"
+
+    if [[ -z "$targetInterface" || ! -d "/sys/class/net/${targetInterface}" ]]; then
+        return 1
+    fi
+
+    # 1. Update global sysctl parameters via updateSysctlParam
+    updateSysctlParam "net.core.rps_sock_flow_entries" "$totalEntries"
+
+    # 2. Update interface-specific neighbor parameters directly into sysctl
+    updateSysctlParam "net.ipv4.neigh.${targetInterface}.base_reachable_time_ms" "120000"
+    updateSysctlParam "net.ipv4.neigh.${targetInterface}.retrans_time_ms" "256"
+    updateSysctlParam "net.ipv4.neigh.${targetInterface}.mcast_solicit" "3"
+
+    # 3. Detect available hardware/virtual RX queues
+    local rxQueues
+    rxQueues=$(ls -d /sys/class/net/"${targetInterface}"/queues/rx-* 2>/dev/null | wc -l)
+
+    if [[ "$rxQueues" -eq 0 ]]; then
+        return 0
+    fi
+
+    # 4. Calculate balanced flow entries per receive queue
+    local perQueueEntries=$((totalEntries / rxQueues))
+
+    # 5. Apply flow counts to sysfs attributes immediately
+    for rxQueuePath in /sys/class/net/"${targetInterface}"/queues/rx-*; do
+        if [[ -w "${rxQueuePath}/rps_flow_cnt" ]]; then
+            echo "${perQueueEntries}" | tee "${rxQueuePath}/rps_flow_cnt" >/dev/null
+        fi
+    done
+
+    # 6. Generate udev rule to persist sysfs rps_flow_cnt across system reboots
+    local udevRulesFile="/etc/udev/rules.d/99-network-rps.rules"
+    mkdir -p "$(dirname "$udevRulesFile")"
+    cat <<EOF > "$udevRulesFile"
+# Automatically generated udev rule for RFS queue persistence
+SUBSYSTEM=="net", ACTION=="add|change", KERNEL=="${targetInterface}", RUN+="/bin/sh -c 'for q in /sys/class/net/%k/queues/rx-*/rps_flow_cnt; do [ -w \"\$\$q\" ] && echo ${perQueueEntries} > \"\$\$q\"; done'"
+EOF
+}
+
 updateSysctlParam() {
     local paramKey="$1"
     local paramValue="$2"
-    local targetFile="$sysctl_conf"
+    local targetFile="$sysctlConf"
+
+    # Ensure target configuration directory and file exist
+    mkdir -p "$(dirname "$targetFile")"
+    touch "$targetFile"
 
     if grep -qE "^[[:space:]]*#?[[:space:]]*${paramKey}\b" "$targetFile"; then
         sed -i -E "s|^[[:space:]]*#?[[:space:]]*${paramKey}\b.*|${paramKey} = ${paramValue}|" "$targetFile"
@@ -475,6 +542,9 @@ updateSysctlParam() {
         fi
         echo "${paramKey} = ${paramValue}" >> "$targetFile"
     fi
+
+    # Apply immediately to the running kernel
+    sysctl -w "${paramKey}=${paramValue}" >/dev/null 2>&1 || true
 }
 
 # ==================== 路由窗口设置（仅运行时，不持久化） ====================
