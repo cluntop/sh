@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.9"
-version_test="278"
+version_test="279"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -402,8 +402,8 @@ net_mem() {
         netdevBacklog=8192
         maxTwBuckets=32768
         maxOrphans=8192
-        rcvBufMax=8388608        # 8MB max buffer
-        sndBufMax=8388608
+        rcvBufMax=16777216        # 16MB max buffer
+        sndBufMax=16777216
         optmemCeiling=131072     # 128KB
     elif [ "$sizeMb" -lt 6144 ]; then
         # Tier 2: Medium-Low Memory (2GB - 6GB)
