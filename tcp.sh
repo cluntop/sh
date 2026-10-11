@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.9"
-version_test="279"
+version_test="280"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -397,11 +397,11 @@ net_mem() {
 
     if [ "$sizeMb" -lt 2048 ]; then
         # Tier 1: Low Memory (< 2GB)
-        synBacklog=16384
+        synBacklog=32768
         somaxconnVal=16384
-        netdevBacklog=8192
+        netdevBacklog=16384
         maxTwBuckets=32768
-        maxOrphans=8192
+        maxOrphans=32768
         rcvBufMax=16777216        # 16MB max buffer
         sndBufMax=16777216
         optmemCeiling=131072     # 128KB
@@ -690,11 +690,11 @@ sysctl_p() {
   sysctl --system >/dev/null 2>&1
   sysctl -w net.ipv4.route.flush=1 >/dev/null 2>&1
   sysctl -w net.ipv6.route.flush=1 >/dev/null 2>&1
-  ip route flush cache >/dev/null 2>&1
+  # ip route flush cache >/dev/null 2>&1
 
   resolvectl flush-caches 2>/dev/null || true
   systemctl restart nscd 2>/dev/null || service nscd restart 2>/dev/null || true
-  ip neigh flush all 2>/dev/null || true
+  # ip neigh flush all 2>/dev/null || true
   nscd -i hosts 2>/dev/null || true
 
   modprobe nf_conntrack 2>/dev/null || true
