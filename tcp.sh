@@ -3,14 +3,14 @@
 # bash <(curl -sL clun.top)
 # set -euo pipefail
 
-version="1.2.9"
-version_test="280"
+version="1.2.10"
+version_test="281"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
 GREEN='\033[32m'
 YELLOW='\033[33m'
-BLUE='\033[34m'
+BLUE='\033[34m' 
 GRAY='\033[90m'
 WHITE='\033[97m'
 RESET='\033[0m'
@@ -386,80 +386,80 @@ net_mem() {
     # 3. Connection Queues & Buffer Sizing (Fixed Standard Tiers)
     #    Parameters are clamped into standardized power-of-two boundaries.
     # --------------------------------------------------------------------------
-    local synBacklog
-    local somaxconnVal
-    local netdevBacklog
-    local maxTwBuckets
-    local maxOrphans
+    local syn_backlog
+    local somaxconn
+    local netdev_backlog
+    local tw_buckets
+    local max_orphans
     local rcvBufMax
     local sndBufMax
-    local optmemCeiling
+    local optmem_max
 
     if [ "$sizeMb" -lt 2048 ]; then
         # Tier 1: Low Memory (< 2GB)
-        synBacklog=32768
-        somaxconnVal=16384
-        netdevBacklog=16384
-        maxTwBuckets=32768
-        maxOrphans=32768
-        rcvBufMax=16777216        # 16MB max buffer
-        sndBufMax=16777216
-        optmemCeiling=131072     # 128KB
+        syn_backlog=32768
+        somaxconn=4096
+        netdev_backlog=8192
+        tw_buckets=32768
+        max_orphans=32768
+        rcvBufMax=134217728
+        sndBufMax=134217728
+        optmem_max=262144
     elif [ "$sizeMb" -lt 6144 ]; then
         # Tier 2: Medium-Low Memory (2GB - 6GB)
-        synBacklog=65536
-        somaxconnVal=32768
-        netdevBacklog=32768
-        maxTwBuckets=65536
-        maxOrphans=16384
-        rcvBufMax=16777216       # 16MB max buffer
-        sndBufMax=16777216
-        optmemCeiling=524288     # 512KB
+        syn_backlog=65536
+        somaxconn=32768
+        netdev_backlog=32768
+        tw_buckets=65536
+        max_orphans=16384
+        rcvBufMax=134217728
+        sndBufMax=134217728
+        optmem_max=524288     # 512KB
     elif [ "$sizeMb" -lt 14336 ]; then
         # Tier 3: Medium Memory (6GB - 14GB)
-        synBacklog=131072
-        somaxconnVal=65535
-        netdevBacklog=65536
-        maxTwBuckets=131072
-        maxOrphans=32768
-        rcvBufMax=33554432       # 32MB max buffer
-        sndBufMax=33554432
-        optmemCeiling=1048576    # 1MB
+        syn_backlog=131072
+        somaxconn=65535
+        netdev_backlog=65536
+        tw_buckets=131072
+        max_orphans=32768
+        rcvBufMax=268435456
+        sndBufMax=268435456
+        optmem_max=1048576    # 1MB
     elif [ "$sizeMb" -lt 30720 ]; then
         # Tier 4: High Memory (14GB - 30GB)
-        synBacklog=262144
-        somaxconnVal=131072
-        netdevBacklog=131072
-        maxTwBuckets=262144
-        maxOrphans=65536
-        rcvBufMax=33554432       # 32MB max buffer
-        sndBufMax=33554432
-        optmemCeiling=2097152    # 2MB
+        syn_backlog=262144
+        somaxconn=131072
+        netdev_backlog=131072
+        tw_buckets=262144
+        max_orphans=65536
+        rcvBufMax=268435456
+        sndBufMax=268435456
+        optmem_max=2097152    # 2MB
     else
         # Tier 5: Ultra High Memory (>= 30GB)
-        synBacklog=524288
-        somaxconnVal=262144
-        netdevBacklog=262144
-        maxTwBuckets=524288
-        maxOrphans=131072
-        rcvBufMax=67108864       # 64MB max buffer
-        sndBufMax=67108864
-        optmemCeiling=4194304    # 4MB
+        syn_backlog=524288
+        somaxconn=262144
+        netdev_backlog=262144
+        tw_buckets=524288
+        max_orphans=131072
+        rcvBufMax=536870912
+        sndBufMax=536870912
+        optmem_max=4194304    # 4MB
     fi
 
     # Apply Queue Limits
-    updateSysctlParam "net.ipv4.tcp_max_syn_backlog" "${synBacklog}"
-    updateSysctlParam "net.core.somaxconn" "${somaxconnVal}"
-    updateSysctlParam "net.core.netdev_max_backlog" "${netdevBacklog}"
-    updateSysctlParam "net.ipv4.tcp_max_tw_buckets" "${maxTwBuckets}"
-    updateSysctlParam "net.ipv4.tcp_max_orphans" "${maxOrphans}"
+    updateSysctlParam "net.ipv4.tcp_max_syn_backlog" "${syn_backlog}"
+    updateSysctlParam "net.core.somaxconn" "${somaxconn}"
+    updateSysctlParam "net.core.netdev_max_backlog" "${netdev_backlog}"
+    updateSysctlParam "net.ipv4.tcp_max_tw_buckets" "${tw_buckets}"
+    updateSysctlParam "net.ipv4.tcp_max_orphans" "${max_orphans}"
 
     # Apply Socket Buffer Boundaries (Retaining 8KB/4KB floors and 256KB/16KB defaults)
     updateSysctlParam "net.ipv4.tcp_rmem" "8192 262144 ${rcvBufMax}"
     updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${sndBufMax}"
     updateSysctlParam "net.core.rmem_max" "${rcvBufMax}"
     updateSysctlParam "net.core.wmem_max" "${sndBufMax}"
-    updateSysctlParam "net.core.optmem_max" "${optmemCeiling}"
+    updateSysctlParam "net.core.optmem_max" "${optmem_max}"
 }
 
 # Automatically detect the primary egress network interface
@@ -467,7 +467,7 @@ getPrimaryInterface() {
     local detectedInterface
     # Primary lookup: query routing entry for default gateway
     detectedInterface=$(ip -4 route show default 2>/dev/null | awk '/default/ {print $5; exit}')
-    
+
     # Fallback lookup: resolve interface via route lookup to public DNS
     if [[ -z "$detectedInterface" ]]; then
         detectedInterface=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $5; exit}')
