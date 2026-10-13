@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.10"
-version_test="281"
+version_test="282"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -397,7 +397,7 @@ net_mem() {
 
     if [ "$sizeMb" -lt 2048 ]; then
         # Tier 1: Low Memory (< 2GB)
-        syn_backlog=32768
+        syn_backlog=8192
         somaxconn=4096
         netdev_backlog=8192
         tw_buckets=32768
@@ -414,7 +414,7 @@ net_mem() {
         max_orphans=16384
         rcvBufMax=134217728
         sndBufMax=134217728
-        optmem_max=524288     # 512KB
+        optmem_max=524288
     elif [ "$sizeMb" -lt 14336 ]; then
         # Tier 3: Medium Memory (6GB - 14GB)
         syn_backlog=131072
@@ -424,7 +424,7 @@ net_mem() {
         max_orphans=32768
         rcvBufMax=268435456
         sndBufMax=268435456
-        optmem_max=1048576    # 1MB
+        optmem_max=1048576
     elif [ "$sizeMb" -lt 30720 ]; then
         # Tier 4: High Memory (14GB - 30GB)
         syn_backlog=262144
@@ -434,7 +434,7 @@ net_mem() {
         max_orphans=65536
         rcvBufMax=268435456
         sndBufMax=268435456
-        optmem_max=2097152    # 2MB
+        optmem_max=2097152
     else
         # Tier 5: Ultra High Memory (>= 30GB)
         syn_backlog=524288
@@ -444,7 +444,7 @@ net_mem() {
         max_orphans=131072
         rcvBufMax=536870912
         sndBufMax=536870912
-        optmem_max=4194304    # 4MB
+        optmem_max=4194304
     fi
 
     # Apply Queue Limits
