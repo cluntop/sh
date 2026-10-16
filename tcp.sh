@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.10"
-version_test="282"
+version_test="283"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -397,54 +397,54 @@ net_mem() {
 
     if [ "$sizeMb" -lt 2048 ]; then
         # Tier 1: Low Memory (< 2GB)
-        syn_backlog=8192
-        somaxconn=4096
-        netdev_backlog=8192
-        tw_buckets=32768
-        max_orphans=32768
-        rcvBufMax=134217728
-        sndBufMax=134217728
-        optmem_max=262144
+        syn_backlog=32768
+        somaxconn=32768
+        netdev_backlog=16384
+        tw_buckets=131072
+        max_orphans=16384
+        rcvBufMax=16777216
+        sndBufMax=16777216
+        optmem_max=65536
     elif [ "$sizeMb" -lt 6144 ]; then
         # Tier 2: Medium-Low Memory (2GB - 6GB)
-        syn_backlog=65536
-        somaxconn=32768
+        syn_backlog=65535
+        somaxconn=65535
         netdev_backlog=32768
-        tw_buckets=65536
-        max_orphans=16384
-        rcvBufMax=134217728
-        sndBufMax=134217728
-        optmem_max=524288
+        tw_buckets=262144
+        max_orphans=32768
+        rcvBufMax=33554432
+        sndBufMax=33554432
+        optmem_max=131072
     elif [ "$sizeMb" -lt 14336 ]; then
         # Tier 3: Medium Memory (6GB - 14GB)
         syn_backlog=131072
-        somaxconn=65535
+        somaxconn=131072
         netdev_backlog=65536
-        tw_buckets=131072
-        max_orphans=32768
-        rcvBufMax=268435456
-        sndBufMax=268435456
-        optmem_max=1048576
+        tw_buckets=524288
+        max_orphans=65536
+        rcvBufMax=67108864
+        sndBufMax=67108864
+        optmem_max=262144
     elif [ "$sizeMb" -lt 30720 ]; then
         # Tier 4: High Memory (14GB - 30GB)
         syn_backlog=262144
-        somaxconn=131072
+        somaxconn=262144
         netdev_backlog=131072
-        tw_buckets=262144
-        max_orphans=65536
-        rcvBufMax=268435456
-        sndBufMax=268435456
-        optmem_max=2097152
+        tw_buckets=1048576
+        max_orphans=131072
+        rcvBufMax=134217728
+        sndBufMax=134217728
+        optmem_max=524288
     else
         # Tier 5: Ultra High Memory (>= 30GB)
         syn_backlog=524288
-        somaxconn=262144
+        somaxconn=524288
         netdev_backlog=262144
-        tw_buckets=524288
-        max_orphans=131072
-        rcvBufMax=536870912
-        sndBufMax=536870912
-        optmem_max=4194304
+        tw_buckets=2097152
+        max_orphans=262144
+        rcvBufMax=268435456
+        sndBufMax=268435456
+        optmem_max=1048576
     fi
 
     # Apply Queue Limits
