@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.10"
-version_test="283"
+version_test="284"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -707,7 +707,7 @@ sysctl_p() {
   sysctl -w net.core.rps_sock_flow_entries=32768 >/dev/null 2>&1
 
   # === 修改：设置路由窗口，仅运行时，不持久化 ===
-  route_set_initcwnd 32
+  #route_set_initcwnd 32
 
 }
 
