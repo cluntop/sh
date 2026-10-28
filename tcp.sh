@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="285"
+version_test="286"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -406,19 +406,12 @@ net_mem() {
     [[ $socket_max_bytes -lt 16777216  ]] && socket_max_bytes=16777216
     [[ $socket_max_bytes -gt 536870912 ]] && socket_max_bytes=536870912
 
-    local rmem_default=$((socket_max_bytes / 16))
-    local wmem_default=$((socket_max_bytes / 32))
-    [[ $rmem_default -lt 131072  ]] && rmem_default=131072
-    [[ $wmem_default -lt 65536   ]] && wmem_default=65536
-    [[ $rmem_default -gt 8388608 ]] && rmem_default=8388608
-    [[ $wmem_default -gt 4194304 ]] && wmem_default=4194304
-
-    updateSysctlParam "net.ipv4.tcp_rmem" "8192 ${rmem_default} ${socket_max_bytes}"
-    updateSysctlParam "net.ipv4.tcp_wmem" "4096 ${wmem_default} ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_rmem" "4096 131072 ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_max" "${socket_max_bytes}"
     updateSysctlParam "net.core.wmem_max" "${socket_max_bytes}"
-    updateSysctlParam "net.core.rmem_default" "${rmem_default}"
-    updateSysctlParam "net.core.wmem_default" "${wmem_default}"
+    updateSysctlParam "net.core.rmem_default" "131072"
+    updateSysctlParam "net.core.wmem_default" "16384"
 
     # ---- 3. conntrack / TW / orphan：沿用高并发保底逻辑 ----
     local conntrackMax=$((sizeMb * 1024 * 1024 / 400 * 125 / 1000))
