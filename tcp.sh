@@ -3,8 +3,8 @@
 # bash <(curl -sL clun.top)
 # set -euo pipefail
 
-version="1.2.10"
-version_test="284"
+version="1.2.11"
+version_test="285"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -334,131 +334,120 @@ if ! declare -F updateSysctlParam >/dev/null 2>&1; then
 fi
 
 # ==================== 内存参数计算与应用 ====================
-# 公式（单位：页，4KB/页）：
-#   tcp_mem: low=RAM_MB*16, pres=RAM_MB*32, max=RAM_MB*64
-#   换算成字节即 RAM/16, RAM/8, RAM/4
-#   下限保护：low>=4096, pres>=8192, max>=16384
-#   udp_mem: 按原脚本逻辑取 tcp_mem 的 60%，同样加下限
+# 获取有效内存（MiB）：min(/proc/meminfo MemTotal, cgroup 限制)，兜底 1024MiB
+# 优先级：cgroup 限制（容器/VM 配额） > MemTotal（系统可见内存） > 1024MiB 安全兜底
+get_effective_mem_mb() {
+    local memtotal_kb cg_bytes cg_kb effective_kb
+
+    # 基础值：/proc/meminfo MemTotal（比 free -m 更底层、格式更稳定）
+    memtotal_kb=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null)
+    [[ "$memtotal_kb" =~ ^[0-9]+$ ]] && [[ "$memtotal_kb" -gt 0 ]] || memtotal_kb=$((1024 * 1024))
+    effective_kb=$memtotal_kb
+
+    # cgroup v2：若限制小于 MemTotal，则以 cgroup 为准
+    if [[ -r /sys/fs/cgroup/memory.max ]]; then
+        cg_bytes=$(cat /sys/fs/cgroup/memory.max 2>/dev/null)
+        if [[ "$cg_bytes" =~ ^[0-9]+$ ]]; then
+            cg_kb=$((cg_bytes / 1024))
+            [[ "$cg_kb" -gt 0 && "$cg_kb" -lt "$effective_kb" ]] && effective_kb=$cg_kb
+        fi
+    fi
+
+    # cgroup v1：无限制时值为接近 2^63，需过滤
+    if [[ -r /sys/fs/cgroup/memory/memory.limit_in_bytes ]]; then
+        cg_bytes=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null)
+        if [[ "$cg_bytes" =~ ^[0-9]+$ ]] && [[ "$cg_bytes" -lt $((1 << 60)) ]]; then
+            cg_kb=$((cg_bytes / 1024))
+            [[ "$cg_kb" -gt 0 && "$cg_kb" -lt "$effective_kb" ]] && effective_kb=$cg_kb
+        fi
+    fi
+
+    echo $((effective_kb / 1024))
+}
+
 net_mem() {
     local sizeMb
-    sizeMb=$(free -m | awk '/^Mem:/{print $2}')
-    [[ -z "$sizeMb" ]] && sizeMb=1024
-    [[ "$sizeMb" -lt 256 ]] && sizeMb=256
+    sizeMb=$(get_effective_mem_mb)
+    [[ -z "$sizeMb" || "$sizeMb" -le 0 ]] && sizeMb=1024
 
-    # --------------------------------------------------------------------------
-    # 1. Global TCP/UDP Memory Allocation (Unit: 4KB Pages)
-    #    Base ratio: low=RAM/16, pressure=RAM/8, max=RAM/4
-    # --------------------------------------------------------------------------
-    local tcpLow=$((sizeMb * 16))
-    local tcpMid=$((sizeMb * 32))
-    local tcpHigh=$((sizeMb * 64))
+    # ---- V6 风格可调参数 ----
+    local TARGET_BDP_MB=64          # 你期望覆盖的最大带宽延迟积（MB）
+    local BDP_MULTIPLIER=2          # 单连接上限 = BDP × 倍数
+    local MEM_RATIO_PERCENT=30      # tcp_mem 全局池占物理内存百分比
+    local SOCKET_HARD_CAP_MB=512    # 单连接缓冲区绝对硬顶（参考 V6 量级）
 
-    # Floor protection for ultra-low memory nodes
-    [[ $tcpLow  -lt 4096  ]] && tcpLow=4096
-    [[ $tcpMid  -lt 8192  ]] && tcpMid=8192
-    [[ $tcpHigh -lt 16384 ]] && tcpHigh=16384
+    local SOCKET_MAX_MB=$((TARGET_BDP_MB * BDP_MULTIPLIER))
+    [[ $SOCKET_MAX_MB -gt $SOCKET_HARD_CAP_MB ]] && SOCKET_MAX_MB=$SOCKET_HARD_CAP_MB
 
-    # Keep UDP memory ceiling identical to TCP for high-concurrency QUIC/UDP proxying
-    local udpLow=$tcpLow
-    local udpMid=$tcpMid
-    local udpHigh=$tcpHigh
+    local page_size_kb=4
+    local total_pages=$((sizeMb * 1024 / page_size_kb))
+
+    # ---- 1. tcp_mem / udp_mem：内存比例封顶 + 不低于单连接上限的 4 倍 ----
+    local tcpHigh=$((total_pages * MEM_RATIO_PERCENT / 100))
+    local socket_max_pages=$((SOCKET_MAX_MB * 1024 * 1024 / (page_size_kb * 1024)))
+    local floor_pages=$((socket_max_pages * 4))
+    [[ $tcpHigh -lt $floor_pages ]] && tcpHigh=$floor_pages
+
+    local tcpMid=$((tcpHigh * 60 / 100))
+    local tcpLow=$((tcpHigh * 40 / 100))
+
+    [[ $tcpLow  -lt 32768  ]] && tcpLow=32768
+    [[ $tcpMid  -lt 65536  ]] && tcpMid=65536
+    [[ $tcpHigh -lt 131072 ]] && tcpHigh=131072
 
     updateSysctlParam "net.ipv4.tcp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
-    updateSysctlParam "net.ipv4.udp_mem" "${udpLow} ${udpMid} ${udpHigh}"
+    updateSysctlParam "net.ipv4.udp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
 
-    # --------------------------------------------------------------------------
-    # 2. Netfilter Connection Tracking Configuration
-    #    nf_conntrack_max: RAM_MB * 128 (1GB RAM = 131072 entries)
-    # --------------------------------------------------------------------------
-    local conntrackMax=$((sizeMb * 128))
-    [[ $conntrackMax -lt 65536 ]] && conntrackMax=65536
-    local conntrackBuckets=$((conntrackMax / 4))
+    # ---- 2. 单连接缓冲区：BDP 驱动，受全局池份额约束 ----
+    local socket_max_bytes=$((SOCKET_MAX_MB * 1024 * 1024))
+    local tcp_high_bytes=$((tcpHigh * page_size_kb * 1024))
+    local quarter_pool=$((tcp_high_bytes / 4))
+    [[ $socket_max_bytes -gt $quarter_pool ]] && socket_max_bytes=$quarter_pool
+    [[ $socket_max_bytes -lt 16777216  ]] && socket_max_bytes=16777216
+    [[ $socket_max_bytes -gt 536870912 ]] && socket_max_bytes=536870912
 
+    local rmem_default=$((socket_max_bytes / 16))
+    local wmem_default=$((socket_max_bytes / 32))
+    [[ $rmem_default -lt 131072  ]] && rmem_default=131072
+    [[ $wmem_default -lt 65536   ]] && wmem_default=65536
+    [[ $rmem_default -gt 8388608 ]] && rmem_default=8388608
+    [[ $wmem_default -gt 4194304 ]] && wmem_default=4194304
+
+    updateSysctlParam "net.ipv4.tcp_rmem" "8192 ${rmem_default} ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_wmem" "4096 ${wmem_default} ${socket_max_bytes}"
+    updateSysctlParam "net.core.rmem_max" "${socket_max_bytes}"
+    updateSysctlParam "net.core.wmem_max" "${socket_max_bytes}"
+    updateSysctlParam "net.core.rmem_default" "${rmem_default}"
+    updateSysctlParam "net.core.wmem_default" "${wmem_default}"
+
+    # ---- 3. conntrack / TW / orphan：沿用高并发保底逻辑 ----
+    local conntrackMax=$((sizeMb * 1024 * 1024 / 400 * 125 / 1000))
+    [[ $conntrackMax -lt 262144 ]] && conntrackMax=262144
+    [[ $conntrackMax -gt 4194304 ]] && conntrackMax=4194304
     updateSysctlParam "net.netfilter.nf_conntrack_max" "${conntrackMax}"
-    # In modern kernels, buckets must be adjusted via sysfs parameter if sysctl is read-only
-    if [[ -w /sys/module/nf_conntrack/parameters/hashsize ]]; then
-        echo "${conntrackBuckets}" > /sys/module/nf_conntrack/parameters/hashsize
-    else
-        updateSysctlParam "net.netfilter.nf_conntrack_buckets" "${conntrackBuckets}"
-    fi
 
-    # --------------------------------------------------------------------------
-    # 3. Connection Queues & Buffer Sizing (Fixed Standard Tiers)
-    #    Parameters are clamped into standardized power-of-two boundaries.
-    # --------------------------------------------------------------------------
-    local syn_backlog
-    local somaxconn
-    local netdev_backlog
-    local tw_buckets
-    local max_orphans
-    local rcvBufMax
-    local sndBufMax
-    local optmem_max
-
-    if [ "$sizeMb" -lt 2048 ]; then
-        # Tier 1: Low Memory (< 2GB)
-        syn_backlog=32768
-        somaxconn=32768
-        netdev_backlog=16384
-        tw_buckets=131072
-        max_orphans=16384
-        rcvBufMax=16777216
-        sndBufMax=16777216
-        optmem_max=65536
-    elif [ "$sizeMb" -lt 6144 ]; then
-        # Tier 2: Medium-Low Memory (2GB - 6GB)
-        syn_backlog=65535
-        somaxconn=65535
-        netdev_backlog=32768
-        tw_buckets=262144
-        max_orphans=32768
-        rcvBufMax=33554432
-        sndBufMax=33554432
-        optmem_max=131072
-    elif [ "$sizeMb" -lt 14336 ]; then
-        # Tier 3: Medium Memory (6GB - 14GB)
-        syn_backlog=131072
-        somaxconn=131072
-        netdev_backlog=65536
-        tw_buckets=524288
-        max_orphans=65536
-        rcvBufMax=67108864
-        sndBufMax=67108864
-        optmem_max=262144
-    elif [ "$sizeMb" -lt 30720 ]; then
-        # Tier 4: High Memory (14GB - 30GB)
-        syn_backlog=262144
-        somaxconn=262144
-        netdev_backlog=131072
-        tw_buckets=1048576
-        max_orphans=131072
-        rcvBufMax=134217728
-        sndBufMax=134217728
-        optmem_max=524288
-    else
-        # Tier 5: Ultra High Memory (>= 30GB)
-        syn_backlog=524288
-        somaxconn=524288
-        netdev_backlog=262144
-        tw_buckets=2097152
-        max_orphans=262144
-        rcvBufMax=268435456
-        sndBufMax=268435456
-        optmem_max=1048576
-    fi
-
-    # Apply Queue Limits
-    updateSysctlParam "net.ipv4.tcp_max_syn_backlog" "${syn_backlog}"
-    updateSysctlParam "net.core.somaxconn" "${somaxconn}"
-    updateSysctlParam "net.core.netdev_max_backlog" "${netdev_backlog}"
+    local tw_buckets=$((conntrackMax / 2))
+    [[ $tw_buckets -lt 262144 ]] && tw_buckets=262144
     updateSysctlParam "net.ipv4.tcp_max_tw_buckets" "${tw_buckets}"
+
+    local max_orphans=$((conntrackMax / 10))
+    [[ $max_orphans -lt 32768 ]] && max_orphans=32768
     updateSysctlParam "net.ipv4.tcp_max_orphans" "${max_orphans}"
 
-    # Apply Socket Buffer Boundaries (Retaining 8KB/4KB floors and 256KB/16KB defaults)
-    updateSysctlParam "net.ipv4.tcp_rmem" "8192 262144 ${rcvBufMax}"
-    updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${sndBufMax}"
-    updateSysctlParam "net.core.rmem_max" "${rcvBufMax}"
-    updateSysctlParam "net.core.wmem_max" "${sndBufMax}"
+    # ---- 4. 队列与 optmem ----
+    local somaxconn=$((sizeMb * 32))
+    [[ $somaxconn -lt 65535 ]] && somaxconn=65535
+    [[ $somaxconn -gt 524288 ]] && somaxconn=524288
+    updateSysctlParam "net.core.somaxconn" "${somaxconn}"
+
+    local netdev_backlog=$((sizeMb * 16))
+    [[ $netdev_backlog -lt 32768 ]] && netdev_backlog=32768
+    [[ $netdev_backlog -gt 262144 ]] && netdev_backlog=262144
+    updateSysctlParam "net.core.netdev_max_backlog" "${netdev_backlog}"
+
+    local optmem_max=$((sizeMb * 512))
+    [[ $optmem_max -lt 131072 ]] && optmem_max=131072
+    [[ $optmem_max -gt 2097152 ]] && optmem_max=2097152
     updateSysctlParam "net.core.optmem_max" "${optmem_max}"
 }
 
