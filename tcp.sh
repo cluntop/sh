@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="286"
+version_test="287"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -370,53 +370,70 @@ net_mem() {
     sizeMb=$(get_effective_mem_mb)
     [[ -z "$sizeMb" || "$sizeMb" -le 0 ]] && sizeMb=1024
 
-    # ---- V6 风格可调参数 ----
-    local TARGET_BDP_MB=64          # 你期望覆盖的最大带宽延迟积（MB）
-    local BDP_MULTIPLIER=2          # 单连接上限 = BDP × 倍数
-    local MEM_RATIO_PERCENT=30      # tcp_mem 全局池占物理内存百分比
-    local SOCKET_HARD_CAP_MB=512    # 单连接缓冲区绝对硬顶（参考 V6 量级）
-
+    # ---- 可调参数：根据你的链路和内存目标修改 ----
+    # 期望覆盖的最大 BDP（MB）
+    local TARGET_BDP_MB=32
+    # 单连接缓冲上限 = TARGET_BDP_MB × 倍数（2~3 倍 BDP）
+    local BDP_MULTIPLIER=2
     local SOCKET_MAX_MB=$((TARGET_BDP_MB * BDP_MULTIPLIER))
-    [[ $SOCKET_MAX_MB -gt $SOCKET_HARD_CAP_MB ]] && SOCKET_MAX_MB=$SOCKET_HARD_CAP_MB
+
+    # 【核心变更】单连接缓冲区绝对硬顶（MB），可设为 1024、2048 或 3072
+    # 这将允许单条长连接在极端高延迟场景下拥有更大的窗口。
+    local SOCKET_HARD_CAP_MB=2048
+
+    # tcp_mem 最大池占物理内存比例（百分比）。需同步观察，避免全局池过早耗尽。
+    local MEM_RATIO_PERCENT=30
 
     local page_size_kb=4
     local total_pages=$((sizeMb * 1024 / page_size_kb))
 
-    # ---- 1. tcp_mem / udp_mem：内存比例封顶 + 不低于单连接上限的 4 倍 ----
-    local tcpHigh=$((total_pages * MEM_RATIO_PERCENT / 100))
-    local socket_max_pages=$((SOCKET_MAX_MB * 1024 * 1024 / (page_size_kb * 1024)))
-    local floor_pages=$((socket_max_pages * 4))
-    [[ $tcpHigh -lt $floor_pages ]] && tcpHigh=$floor_pages
+    # 应用硬顶约束
+    [[ $SOCKET_MAX_MB -gt $SOCKET_HARD_CAP_MB ]] && SOCKET_MAX_MB=$SOCKET_HARD_CAP_MB
 
+    # ---- 1. tcp_mem / udp_mem：高延迟激进比例 ----
+    local tcpHigh=$((total_pages * MEM_RATIO_PERCENT / 100))
+    # 高延迟下 pressure 设为 max 的 60%，low 设为 40%
     local tcpMid=$((tcpHigh * 60 / 100))
     local tcpLow=$((tcpHigh * 40 / 100))
 
-    [[ $tcpLow  -lt 32768  ]] && tcpLow=32768
-    [[ $tcpMid  -lt 65536  ]] && tcpMid=65536
-    [[ $tcpHigh -lt 131072 ]] && tcpHigh=131072
+    # 最低保底（防止极小内存机器得到无意义的值）
+    [[ $tcpLow  -lt 32768  ]] && tcpLow=32768    # 128 MB
+    [[ $tcpMid  -lt 65536  ]] && tcpMid=65536    # 256 MB
+    [[ $tcpHigh -lt 131072 ]] && tcpHigh=131072  # 512 MB
 
     updateSysctlParam "net.ipv4.tcp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
     updateSysctlParam "net.ipv4.udp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
 
-    # ---- 2. 单连接缓冲区：BDP 驱动，受全局池份额约束 ----
+    # ---- 2. 单连接缓冲区上限：由 TARGET_BDP_MB 与 SOCKET_HARD_CAP_MB 共同决定 ----
     local socket_max_bytes=$((SOCKET_MAX_MB * 1024 * 1024))
     local tcp_high_bytes=$((tcpHigh * page_size_kb * 1024))
     local quarter_pool=$((tcp_high_bytes / 4))
+    # 单连接上限不得超过全局池的 1/4，防止少数连接吃穿全局内存
     [[ $socket_max_bytes -gt $quarter_pool ]] && socket_max_bytes=$quarter_pool
+    # 最终兜底：下限 16 MB，上限即你设定的 SOCKET_HARD_CAP_MB
     [[ $socket_max_bytes -lt 16777216  ]] && socket_max_bytes=16777216
-    [[ $socket_max_bytes -gt 536870912 ]] && socket_max_bytes=536870912
+    local hard_cap_bytes=$((SOCKET_HARD_CAP_MB * 1024 * 1024))
+    [[ $socket_max_bytes -gt $hard_cap_bytes ]] && socket_max_bytes=$hard_cap_bytes
 
-    updateSysctlParam "net.ipv4.tcp_rmem" "4096 131072 ${socket_max_bytes}"
-    updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${socket_max_bytes}"
+    # 默认值：高延迟场景下给一个适中的起点，避免所有连接一上来就占大内存
+    local rmem_default=$((socket_max_bytes / 16))
+    local wmem_default=$((socket_max_bytes / 32))
+    [[ $rmem_default -lt 131072   ]] && rmem_default=131072
+    [[ $wmem_default -lt 65536    ]] && wmem_default=65536
+    [[ $rmem_default -gt 8388608  ]] && rmem_default=8388608
+    [[ $wmem_default -gt 4194304  ]] && wmem_default=4194304
+
+    updateSysctlParam "net.ipv4.tcp_rmem" "8192 ${rmem_default} ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_wmem" "4096 ${wmem_default} ${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_max" "${socket_max_bytes}"
     updateSysctlParam "net.core.wmem_max" "${socket_max_bytes}"
-    updateSysctlParam "net.core.rmem_default" "131072"
-    updateSysctlParam "net.core.wmem_default" "16384"
+    updateSysctlParam "net.core.rmem_default" "${rmem_default}"
+    updateSysctlParam "net.core.wmem_default" "${wmem_default}"
 
-    # ---- 3. conntrack / TW / orphan：沿用高并发保底逻辑 ----
+    # ---- 3. conntrack / TIME_WAIT / 孤儿：与内存规模联动，保底不变 ----
     local conntrackMax=$((sizeMb * 1024 * 1024 / 400 * 125 / 1000))
     [[ $conntrackMax -lt 262144 ]] && conntrackMax=262144
-    [[ $conntrackMax -gt 4194304 ]] && conntrackMax=4194304
+    [[ $conntrackMax -gt 4194304 ]] && conntrackMax=4194304  # 高并发场景上限放宽至 400 万
     updateSysctlParam "net.netfilter.nf_conntrack_max" "${conntrackMax}"
 
     local tw_buckets=$((conntrackMax / 2))
@@ -427,7 +444,7 @@ net_mem() {
     [[ $max_orphans -lt 32768 ]] && max_orphans=32768
     updateSysctlParam "net.ipv4.tcp_max_orphans" "${max_orphans}"
 
-    # ---- 4. 队列与 optmem ----
+    # ---- 4. 队列：保持与内存规模关联，但不再作为核心 ----
     local somaxconn=$((sizeMb * 32))
     [[ $somaxconn -lt 65535 ]] && somaxconn=65535
     [[ $somaxconn -gt 524288 ]] && somaxconn=524288
