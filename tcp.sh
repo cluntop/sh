@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="288"
+version_test="289"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -370,67 +370,37 @@ net_mem() {
     sizeMb=$(get_effective_mem_mb)
     [[ -z "$sizeMb" || "$sizeMb" -le 0 ]] && sizeMb=1024
 
-    # ---- 核心旋钮 ----
-    local SOCKET_HARD_CAP_MB=1024   # 单连接硬顶：1024 / 2048 / 4096 / 8192 / 16384 / 32768
-    local MEM_RATIO_PERCENT=30      # tcp_mem 全局池占物理内存比例（%）
-    local BDP_MULTIPLIER=2          # 仅用于默认值推导的参考倍数
-
-    # ---- 硬顶的绝对范围约束（1G–32G） ----
-    [[ $SOCKET_HARD_CAP_MB -lt 1024  ]] && SOCKET_HARD_CAP_MB=1024
-    [[ $SOCKET_HARD_CAP_MB -gt 32768 ]] && SOCKET_HARD_CAP_MB=32768
-
     local page_size_kb=4
     local total_pages=$((sizeMb * 1024 / page_size_kb))
-    local hard_cap_pages=$((SOCKET_HARD_CAP_MB * 1024 * 1024 / (page_size_kb * 1024)))
 
-    # 1) tcp_mem / udp_mem：与硬顶联动，防止池小于硬顶
-    #    池的 max 至少为硬顶的 2 倍；否则按 MEM_RATIO_PERCENT 计算
-    local min_pool_pages=$((hard_cap_pages * 2))
-    local ratio_pool_pages=$((total_pages * MEM_RATIO_PERCENT / 100))
-    local tcpHigh=$ratio_pool_pages
-    [[ $tcpHigh -lt $min_pool_pages ]] && tcpHigh=$min_pool_pages
+    local socket_max_mb=$((sizeMb / 64))
+    [[ $socket_max_mb -lt 16  ]] && socket_max_mb=16
+    [[ $socket_max_mb -gt 512 ]] && socket_max_mb=512
+    local socket_max_bytes=$((socket_max_mb * 1024 * 1024))
 
-    # 绝对安全阀：池 max 不超过物理内存的 50%
-    local max_pool_pages=$((total_pages * 50 / 100))
-    [[ $tcpHigh -gt $max_pool_pages ]] && tcpHigh=$max_pool_pages
+    local pool_max_mb=$((socket_max_mb * 8))
+    local pool_mem_cap_mb=$((sizeMb / 2))
+    [[ $pool_max_mb -gt $pool_mem_cap_mb ]] && pool_max_mb=$pool_mem_cap_mb
+    [[ $pool_max_mb -lt 64 ]] && pool_max_mb=64
 
-    # 如果硬顶的 2 倍已经超过物理内存的 50%，硬顶实际上不可达
-    # 此时 tcpHigh 取 50% 上限，并在注释中提示
+    local tcpHigh=$((pool_max_mb * 1024 * 1024 / (page_size_kb * 1024)))
     local tcpMid=$((tcpHigh * 60 / 100))
     local tcpLow=$((tcpHigh * 40 / 100))
-
-    [[ $tcpLow  -lt 32768  ]] && tcpLow=32768
-    [[ $tcpMid  -lt 65536  ]] && tcpMid=65536
-    [[ $tcpHigh -lt 131072 ]] && tcpHigh=131072
+    [[ $tcpLow -lt 16384 ]] && tcpLow=16384
 
     updateSysctlParam "net.ipv4.tcp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
     updateSysctlParam "net.ipv4.udp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
 
-    # 2) tcp_rmem / tcp_wmem：硬顶为上限，但不超过池的 1/2
-    local socket_max_bytes=$((SOCKET_HARD_CAP_MB * 1024 * 1024))
-    local tcp_high_bytes=$((tcpHigh * page_size_kb * 1024))
-    local half_pool=$((tcp_high_bytes / 2))
-    [[ $socket_max_bytes -gt $half_pool ]] && socket_max_bytes=$half_pool
-    [[ $socket_max_bytes -lt 16777216 ]] && socket_max_bytes=16777216
-
-    local rmem_default=$((socket_max_bytes / 16))
-    local wmem_default=$((socket_max_bytes / 32))
-    [[ $rmem_default -lt 131072  ]] && rmem_default=131072
-    [[ $wmem_default -lt 65536   ]] && wmem_default=65536
-    [[ $rmem_default -gt 8388608 ]] && rmem_default=8388608
-    [[ $wmem_default -gt 4194304 ]] && wmem_default=4194304
-
-    updateSysctlParam "net.ipv4.tcp_rmem" "8192 ${rmem_default} ${socket_max_bytes}"
-    updateSysctlParam "net.ipv4.tcp_wmem" "4096 ${wmem_default} ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_rmem" "4096 131072 ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_max" "${socket_max_bytes}"
     updateSysctlParam "net.core.wmem_max" "${socket_max_bytes}"
-    updateSysctlParam "net.core.rmem_default" "${rmem_default}"
-    updateSysctlParam "net.core.wmem_default" "${wmem_default}"
+    updateSysctlParam "net.core.rmem_default" "131072"
+    updateSysctlParam "net.core.wmem_default" "16384"
 
-    # 3) conntrack / TIME_WAIT / 孤儿
-    local conntrackMax=$((sizeMb * 1024 * 1024 / 400 * 125 / 1000))
+    local conntrackMax=$((sizeMb * 1024 * 1024 / 16384 / 2))
     [[ $conntrackMax -lt 262144 ]] && conntrackMax=262144
-    [[ $conntrackMax -gt 4194304 ]] && conntrackMax=4194304
+    [[ $conntrackMax -gt 2097152 ]] && conntrackMax=2097152
     updateSysctlParam "net.netfilter.nf_conntrack_max" "${conntrackMax}"
 
     local tw_buckets=$((conntrackMax / 2))
@@ -441,23 +411,21 @@ net_mem() {
     [[ $max_orphans -lt 32768 ]] && max_orphans=32768
     updateSysctlParam "net.ipv4.tcp_max_orphans" "${max_orphans}"
 
-    # 4) 队列 / optmem
     local somaxconn=$((sizeMb * 32))
     [[ $somaxconn -lt 65535 ]] && somaxconn=65535
-    [[ $somaxconn -gt 524288 ]] && somaxconn=524288
+    [[ $somaxconn -gt 262144 ]] && somaxconn=262144
     updateSysctlParam "net.core.somaxconn" "${somaxconn}"
 
     local netdev_backlog=$((sizeMb * 16))
     [[ $netdev_backlog -lt 32768 ]] && netdev_backlog=32768
-    [[ $netdev_backlog -gt 262144 ]] && netdev_backlog=262144
+    [[ $netdev_backlog -gt 131072 ]] && netdev_backlog=131072
     updateSysctlParam "net.core.netdev_max_backlog" "${netdev_backlog}"
 
-    local optmem_max=$((sizeMb * 512))
+    local optmem_max=$((sizeMb * 256))
     [[ $optmem_max -lt 131072 ]] && optmem_max=131072
-    [[ $optmem_max -gt 2097152 ]] && optmem_max=2097152
+    [[ $optmem_max -gt 1048576 ]] && optmem_max=1048576
     updateSysctlParam "net.core.optmem_max" "${optmem_max}"
 }
-
 # Automatically detect the primary egress network interface
 getPrimaryInterface() {
     local detectedInterface
