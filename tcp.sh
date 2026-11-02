@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="289"
+version_test="290"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -373,29 +373,47 @@ net_mem() {
     local page_size_kb=4
     local total_pages=$((sizeMb * 1024 / page_size_kb))
 
-    local socket_max_mb=$((sizeMb / 64))
-    [[ $socket_max_mb -lt 16  ]] && socket_max_mb=16
-    [[ $socket_max_mb -gt 512 ]] && socket_max_mb=512
-    local socket_max_bytes=$((socket_max_mb * 1024 * 1024))
+    local limit=$((total_pages / 16))
+    [[ $limit -lt 128 ]] && limit=128
 
-    local pool_max_mb=$((socket_max_mb * 8))
-    local pool_mem_cap_mb=$((sizeMb / 2))
-    [[ $pool_max_mb -gt $pool_mem_cap_mb ]] && pool_max_mb=$pool_mem_cap_mb
-    [[ $pool_max_mb -lt 64 ]] && pool_max_mb=64
-
-    local tcpHigh=$((pool_max_mb * 1024 * 1024 / (page_size_kb * 1024)))
-    local tcpMid=$((tcpHigh * 60 / 100))
-    local tcpLow=$((tcpHigh * 40 / 100))
-    [[ $tcpLow -lt 16384 ]] && tcpLow=16384
+    local tcpLow=$((limit / 4 * 3))
+    local tcpMid=$limit
+    local tcpHigh=$((tcpLow * 2))
 
     updateSysctlParam "net.ipv4.tcp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
     updateSysctlParam "net.ipv4.udp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
 
-    updateSysctlParam "net.ipv4.tcp_rmem" "4096 131072 ${socket_max_bytes}"
+    # 你期望单条连接实际能撑到的最大窗口（MB）
+    local EXPECTED_MAX_WINDOW_MB=12
+
+    # 窗口占比：scale=2 → 75%
+    local TCP_ADV_WIN_SCALE=2
+    local WIN_PERCENT=$((100 - (100 / (1 << TCP_ADV_WIN_SCALE))))   # 75
+
+    # 反推预算 = 期望窗口 / 窗口占比
+    local socket_max_mb=$((EXPECTED_MAX_WINDOW_MB * 100 / WIN_PERCENT))
+
+    # 安全阀 1：预算不低于 16MB（1G 起步的底线）
+    [[ $socket_max_mb -lt 16 ]] && socket_max_mb=16
+
+    # 安全阀 2：预算不超过 tcp_mem[1] 的 1/4，防止单连接吃穿全局池
+    local tcp_mid_mb=$((tcpMid * page_size_kb / 1024))
+    local quarter_mid_mb=$((tcp_mid_mb / 4))
+    [[ $socket_max_mb -gt $quarter_mid_mb ]] && socket_max_mb=$quarter_mid_mb
+
+    # 安全阀 3：绝对封顶 512MB
+    [[ $socket_max_mb -gt 512 ]] && socket_max_mb=512
+
+    local socket_max_bytes=$((socket_max_mb * 1024 * 1024))
+
+    # updateSysctlParam "net.ipv4.tcp_adv_win_scale" "${TCP_ADV_WIN_SCALE}"
+    # updateSysctlParam "net.ipv4.tcp_shrink_window" "1"
+
+    updateSysctlParam "net.ipv4.tcp_rmem" "8192 262144 ${socket_max_bytes}"
     updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_max" "${socket_max_bytes}"
     updateSysctlParam "net.core.wmem_max" "${socket_max_bytes}"
-    updateSysctlParam "net.core.rmem_default" "131072"
+    updateSysctlParam "net.core.rmem_default" "262144"
     updateSysctlParam "net.core.wmem_default" "16384"
 
     local conntrackMax=$((sizeMb * 1024 * 1024 / 16384 / 2))
@@ -425,24 +443,6 @@ net_mem() {
     [[ $optmem_max -lt 131072 ]] && optmem_max=131072
     [[ $optmem_max -gt 1048576 ]] && optmem_max=1048576
     updateSysctlParam "net.core.optmem_max" "${optmem_max}"
-}
-# Automatically detect the primary egress network interface
-getPrimaryInterface() {
-    local detectedInterface
-    # Primary lookup: query routing entry for default gateway
-    detectedInterface=$(ip -4 route show default 2>/dev/null | awk '/default/ {print $5; exit}')
-
-    # Fallback lookup: resolve interface via route lookup to public DNS
-    if [[ -z "$detectedInterface" ]]; then
-        detectedInterface=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $5; exit}')
-    fi
-
-    # Fallback lookup: grab the first non-virtual physical link if routing is empty
-    if [[ -z "$detectedInterface" ]]; then
-        detectedInterface=$(ls /sys/class/net | grep -vE '^(lo|docker|veth|br-|virbr|tun|tap|wg)' | head -n1)
-    fi
-
-    echo "$detectedInterface"
 }
 
 # Configure RFS and interface-specific network parameters
