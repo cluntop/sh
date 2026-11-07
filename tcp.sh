@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="290"
+version_test="291"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -333,18 +333,13 @@ if ! declare -F updateSysctlParam >/dev/null 2>&1; then
     }
 fi
 
-# ==================== 内存参数计算与应用 ====================
-# 获取有效内存（MiB）：min(/proc/meminfo MemTotal, cgroup 限制)，兜底 1024MiB
-# 优先级：cgroup 限制（容器/VM 配额） > MemTotal（系统可见内存） > 1024MiB 安全兜底
+
 get_effective_mem_mb() {
     local memtotal_kb cg_bytes cg_kb effective_kb
-
-    # 基础值：/proc/meminfo MemTotal（比 free -m 更底层、格式更稳定）
     memtotal_kb=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo 2>/dev/null)
     [[ "$memtotal_kb" =~ ^[0-9]+$ ]] && [[ "$memtotal_kb" -gt 0 ]] || memtotal_kb=$((1024 * 1024))
     effective_kb=$memtotal_kb
 
-    # cgroup v2：若限制小于 MemTotal，则以 cgroup 为准
     if [[ -r /sys/fs/cgroup/memory.max ]]; then
         cg_bytes=$(cat /sys/fs/cgroup/memory.max 2>/dev/null)
         if [[ "$cg_bytes" =~ ^[0-9]+$ ]]; then
@@ -353,7 +348,6 @@ get_effective_mem_mb() {
         fi
     fi
 
-    # cgroup v1：无限制时值为接近 2^63，需过滤
     if [[ -r /sys/fs/cgroup/memory/memory.limit_in_bytes ]]; then
         cg_bytes=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null)
         if [[ "$cg_bytes" =~ ^[0-9]+$ ]] && [[ "$cg_bytes" -lt $((1 << 60)) ]]; then
@@ -361,9 +355,9 @@ get_effective_mem_mb() {
             [[ "$cg_kb" -gt 0 && "$cg_kb" -lt "$effective_kb" ]] && effective_kb=$cg_kb
         fi
     fi
-
     echo $((effective_kb / 1024))
 }
+
 
 net_mem() {
     local sizeMb
@@ -375,7 +369,6 @@ net_mem() {
 
     local limit=$((total_pages / 16))
     [[ $limit -lt 128 ]] && limit=128
-
     local tcpLow=$((limit / 4 * 3))
     local tcpMid=$limit
     local tcpHigh=$((tcpLow * 2))
@@ -383,38 +376,35 @@ net_mem() {
     updateSysctlParam "net.ipv4.tcp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
     updateSysctlParam "net.ipv4.udp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
 
-    # 你期望单条连接实际能撑到的最大窗口（MB）
-    local EXPECTED_MAX_WINDOW_MB=12
+    local EXPECTED_MAX_WINDOW_MB=12       # 你期望单连接实际能撑到的最大窗口
+    local TCP_ADV_WIN_SCALE=2              # 窗口占比 = 75%
+    local WIN_PERCENT=$((100 - (100 / (1 << TCP_ADV_WIN_SCALE))))
 
-    # 窗口占比：scale=2 → 75%
-    local TCP_ADV_WIN_SCALE=2
-    local WIN_PERCENT=$((100 - (100 / (1 << TCP_ADV_WIN_SCALE))))   # 75
-
-    # 反推预算 = 期望窗口 / 窗口占比
     local socket_max_mb=$((EXPECTED_MAX_WINDOW_MB * 100 / WIN_PERCENT))
 
-    # 安全阀 1：预算不低于 16MB（1G 起步的底线）
     [[ $socket_max_mb -lt 16 ]] && socket_max_mb=16
 
-    # 安全阀 2：预算不超过 tcp_mem[1] 的 1/4，防止单连接吃穿全局池
     local tcp_mid_mb=$((tcpMid * page_size_kb / 1024))
     local quarter_mid_mb=$((tcp_mid_mb / 4))
     [[ $socket_max_mb -gt $quarter_mid_mb ]] && socket_max_mb=$quarter_mid_mb
 
-    # 安全阀 3：绝对封顶 512MB
     [[ $socket_max_mb -gt 512 ]] && socket_max_mb=512
 
     local socket_max_bytes=$((socket_max_mb * 1024 * 1024))
 
-    # updateSysctlParam "net.ipv4.tcp_adv_win_scale" "${TCP_ADV_WIN_SCALE}"
-    # updateSysctlParam "net.ipv4.tcp_shrink_window" "1"
-
     updateSysctlParam "net.ipv4.tcp_rmem" "8192 262144 ${socket_max_bytes}"
     updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${socket_max_bytes}"
-    updateSysctlParam "net.core.rmem_max" "${socket_max_bytes}"
-    updateSysctlParam "net.core.wmem_max" "${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_default" "262144"
     updateSysctlParam "net.core.wmem_default" "16384"
+
+    # updateSysctlParam "net.ipv4.tcp_shrink_window" "1"
+
+    local UDP_BUF_BYTES=$((8 * 1024 * 1024))   # 8MB，匹配 quic-go 期望
+    # 如果 socket_max_bytes 更大（大内存机器），取较大值
+    [[ $socket_max_bytes -gt $UDP_BUF_BYTES ]] && UDP_BUF_BYTES=$socket_max_bytes
+
+    updateSysctlParam "net.core.rmem_max" "${UDP_BUF_BYTES}"
+    updateSysctlParam "net.core.wmem_max" "${UDP_BUF_BYTES}"
 
     local conntrackMax=$((sizeMb * 1024 * 1024 / 16384 / 2))
     [[ $conntrackMax -lt 262144 ]] && conntrackMax=262144
@@ -444,6 +434,7 @@ net_mem() {
     [[ $optmem_max -gt 1048576 ]] && optmem_max=1048576
     updateSysctlParam "net.core.optmem_max" "${optmem_max}"
 }
+
 
 # Configure RFS and interface-specific network parameters
 configureRfs() {
