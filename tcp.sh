@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="291"
+version_test="292"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -272,8 +272,8 @@ EOF
 # ==================== 系统服务优化 ====================
 Install_systemd() {
     if [[ -f /sys/kernel/mm/transparent_hugepage/enabled ]]; then
-        echo never >/sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
-        echo never >/sys/kernel/mm/transparent_hugepage/defrag 2>/dev/null || true
+        echo madvise >/sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
+        echo madvise >/sys/kernel/mm/transparent_hugepage/defrag 2>/dev/null || true
         echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag 2>/dev/null || true
     fi
 
@@ -364,9 +364,17 @@ net_mem() {
     sizeMb=$(get_effective_mem_mb)
     [[ -z "$sizeMb" || "$sizeMb" -le 0 ]] && sizeMb=1024
 
+    # 动态获取 CPU 核心数，用于收包队列与软中断预算
+    local cpu_cores
+    cpu_cores=$(nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 1)
+    [[ "$cpu_cores" -lt 1 ]] && cpu_cores=1
+
     local page_size_kb=4
     local total_pages=$((sizeMb * 1024 / page_size_kb))
 
+    # ================================================================
+    # 1) tcp_mem / udp_mem：内核原生 4.68% / 6.25% / 9.37%
+    # ================================================================
     local limit=$((total_pages / 16))
     [[ $limit -lt 128 ]] && limit=128
     local tcpLow=$((limit / 4 * 3))
@@ -376,39 +384,48 @@ net_mem() {
     updateSysctlParam "net.ipv4.tcp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
     updateSysctlParam "net.ipv4.udp_mem" "${tcpLow} ${tcpMid} ${tcpHigh}"
 
-    local EXPECTED_MAX_WINDOW_MB=12       # 你期望单连接实际能撑到的最大窗口
-    local TCP_ADV_WIN_SCALE=2              # 窗口占比 = 75%
+    # ================================================================
+    # 2) 单连接 TCP 窗口：期望窗口反推预算（Cloudflare 博客思路）
+    # ================================================================
+    local EXPECTED_MAX_WINDOW_MB=12
+    local TCP_ADV_WIN_SCALE=2
     local WIN_PERCENT=$((100 - (100 / (1 << TCP_ADV_WIN_SCALE))))
 
     local socket_max_mb=$((EXPECTED_MAX_WINDOW_MB * 100 / WIN_PERCENT))
 
+    # 安全阀 1：预算不低于 16MB
     [[ $socket_max_mb -lt 16 ]] && socket_max_mb=16
 
+    # 安全阀 2：预算 ≤ tcp_mem[1] 的 1/4
     local tcp_mid_mb=$((tcpMid * page_size_kb / 1024))
     local quarter_mid_mb=$((tcp_mid_mb / 4))
     [[ $socket_max_mb -gt $quarter_mid_mb ]] && socket_max_mb=$quarter_mid_mb
 
+    # 安全阀 3：绝对封顶 512MB
     [[ $socket_max_mb -gt 512 ]] && socket_max_mb=512
 
     local socket_max_bytes=$((socket_max_mb * 1024 * 1024))
 
     updateSysctlParam "net.ipv4.tcp_rmem" "8192 262144 ${socket_max_bytes}"
-    updateSysctlParam "net.ipv4.tcp_wmem" "4096 16384 ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_wmem" "4096 262144 ${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_default" "262144"
-    updateSysctlParam "net.core.wmem_default" "16384"
+    updateSysctlParam "net.core.wmem_default" "262144"
 
-    # updateSysctlParam "net.ipv4.tcp_shrink_window" "1"
-
-    local UDP_BUF_BYTES=$((8 * 1024 * 1024))   # 8MB，匹配 quic-go 期望
-    # 如果 socket_max_bytes 更大（大内存机器），取较大值
+    # ================================================================
+    # 3) UDP 缓冲区：服务 XHTTP H3 / QUIC，至少 8MB
+    # ================================================================
+    local UDP_BUF_BYTES=$((8 * 1024 * 1024))
     [[ $socket_max_bytes -gt $UDP_BUF_BYTES ]] && UDP_BUF_BYTES=$socket_max_bytes
 
     updateSysctlParam "net.core.rmem_max" "${UDP_BUF_BYTES}"
     updateSysctlParam "net.core.wmem_max" "${UDP_BUF_BYTES}"
 
+    # ================================================================
+    # 4) conntrack / TIME_WAIT / 孤儿
+    # ================================================================
     local conntrackMax=$((sizeMb * 1024 * 1024 / 16384 / 2))
     [[ $conntrackMax -lt 262144 ]] && conntrackMax=262144
-    [[ $conntrackMax -gt 2097152 ]] && conntrackMax=2097152
+    [[ $conntrackMax -gt 4194304 ]] && conntrackMax=4194304
     updateSysctlParam "net.netfilter.nf_conntrack_max" "${conntrackMax}"
 
     local tw_buckets=$((conntrackMax / 2))
@@ -416,15 +433,26 @@ net_mem() {
     updateSysctlParam "net.ipv4.tcp_max_tw_buckets" "${tw_buckets}"
 
     local max_orphans=$((conntrackMax / 10))
-    [[ $max_orphans -lt 32768 ]] && max_orphans=32768
+    [[ $max_orphans -lt 65536 ]] && max_orphans=65536
     updateSysctlParam "net.ipv4.tcp_max_orphans" "${max_orphans}"
 
-    local somaxconn=$((sizeMb * 32))
-    [[ $somaxconn -lt 65535 ]] && somaxconn=65535
-    [[ $somaxconn -gt 262144 ]] && somaxconn=262144
+    local somaxconn
+    if [ "$sizeMb" -ge 8192 ]; then
+        somaxconn=262144
+    elif [ "$sizeMb" -ge 2048 ]; then
+        somaxconn=131072
+    else
+        somaxconn=65535
+    fi
     updateSysctlParam "net.core.somaxconn" "${somaxconn}"
 
-    local netdev_backlog=$((sizeMb * 16))
+    # 半连接队列 = 全连接队列 × 1.5，保底 65535，封顶 131072
+    local syn_backlog=$((somaxconn * 3 / 2))
+    [[ $syn_backlog -lt 65535 ]] && syn_backlog=65535
+    [[ $syn_backlog -gt 131072 ]] && syn_backlog=131072
+    updateSysctlParam "net.ipv4.tcp_max_syn_backlog" "${syn_backlog}"
+
+    local netdev_backlog=$((10000 * cpu_cores))
     [[ $netdev_backlog -lt 32768 ]] && netdev_backlog=32768
     [[ $netdev_backlog -gt 131072 ]] && netdev_backlog=131072
     updateSysctlParam "net.core.netdev_max_backlog" "${netdev_backlog}"
@@ -938,35 +966,35 @@ while true; do
     echo "17. sysctl 重新加载优化 "
     echo "18. 更新 cloudflared "
     echo "19. TCP 调优 20. 清理全部缓存"
-    echo "000. 科技 Lion 脚本工具箱"
+    echo "00. 科技 Lion 脚本工具箱"
     echo "---"
-    echo "00. 更新脚本 0. 退出脚本"
+    echo "q. 退出脚本 0. 更新脚本"
 
     read -e -p "请输入你的选择: " choice
 
     case $choice in
       1) Install_All ; clear ; exit ;;
-      2) Install_limits ;;
-      3) Install_systemd ;;
+      2) Install_limits ; clear ; exit ;;
+      3) Install_systemd ; clear ; exit ;;
       4) Install_sysctl ; clear ; exit ;;
-      5) sysctl_select ;;
+      5) sysctl_select ; clear ; exit ;;
       7) cleaning_trash ; clear ; exit ;;
-      8) tcp_info ;;
+      8) tcp_info ; clear ; exit ;;
       9) Install_bbr ; clear ; exit ;;
       10) radical_sh ; clear ; exit ;;
       11)  clear ; exit ;;
       12) joey_install ; clear ; exit ;;
-      13) lost_packet ;;
-      14) check_buffer ;;
-      15) check_settings ;;
+      13) lost_packet ; clear ; exit ;;
+      14) check_buffer ; clear ; exit ;;
+      15) check_settings ; clear ; exit ;;
       16) systemd_journald_optimize ;;
       17) sysctl_p ; clear ; exit ;;
-      18) up_cloudflared ;;
+      18) up_cloudflared ; clear ; exit ;;
       19) bash <(curl -fsSL https://raw.githubusercontent.com/Kylin010/tcpfit/main/tcpfit.sh) ;;
-      20) clear_all_caches ;;
-      000) kejilion_sh ; clear ; exit ;;
-      00) update_script ; clear ; exit ;;
-      0) clear ; exit ;;
+      20) clear_all_caches ; clear ; exit ;;
+      00) kejilion_sh ; clear ; exit ;;
+      0) update_script ; clear ; exit ;;
+      q) clear ; exit ;;
       *) echo "无效的输入!" ;;
     esac
     echo
