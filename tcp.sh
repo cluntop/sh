@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="292"
+version_test="293"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -272,8 +272,7 @@ EOF
 # ==================== 系统服务优化 ====================
 Install_systemd() {
     if [[ -f /sys/kernel/mm/transparent_hugepage/enabled ]]; then
-        echo madvise >/sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
-        echo madvise >/sys/kernel/mm/transparent_hugepage/defrag 2>/dev/null || true
+        echo never >/sys/kernel/mm/transparent_hugepage/enabled 2>/dev/null || true
         echo 0 > /sys/kernel/mm/transparent_hugepage/khugepaged/defrag 2>/dev/null || true
     fi
 
