@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="295"
+version_test="296"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -406,9 +406,9 @@ net_mem() {
     local socket_max_bytes=$((socket_max_mb * 1024 * 1024))
 
     updateSysctlParam "net.ipv4.tcp_rmem" "8192 262144 ${socket_max_bytes}"
-    updateSysctlParam "net.ipv4.tcp_wmem" "4096 131072 ${socket_max_bytes}"
+    updateSysctlParam "net.ipv4.tcp_wmem" "4096 262144 ${socket_max_bytes}"
     updateSysctlParam "net.core.rmem_default" "262144"
-    updateSysctlParam "net.core.wmem_default" "131072"
+    updateSysctlParam "net.core.wmem_default" "262144"
 
     # ================================================================
     # 3) UDP 缓冲区：服务 XHTTP H3 / QUIC，至少 8MB
