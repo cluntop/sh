@@ -4,7 +4,7 @@
 # set -euo pipefail
 
 version="1.2.11"
-version_test="296"
+version_test="297"
 
 # ==================== 颜色定义 ====================
 RED='\033[31m'
@@ -235,22 +235,12 @@ update_script() {
 # ==================== 系统限制优化 ====================
 Install_limits() {
 cat >> /etc/security/limits.conf <<EOF
-root hard memlock unlimited
-root soft memlock unlimited
-root hard nproc 1048576
-root hard nofile 1048576
-root soft nproc 1048576
-root soft nofile 1048576
-
 * hard memlock unlimited
 * soft memlock unlimited
 * hard nproc 1048576
 * hard nofile 1048576
 * soft nproc 1048576
 * soft nofile 1048576
-
-root hard core 0
-root soft core 0
 
 * hard core 0
 * soft core 0
@@ -689,7 +679,7 @@ sysctl_p() {
   sysctl -w net.core.rps_sock_flow_entries=32768 >/dev/null 2>&1
 
   # === 修改：设置路由窗口，仅运行时，不持久化 ===
-  #route_set_initcwnd 32
+  route_set_initcwnd 32
 
 }
 
